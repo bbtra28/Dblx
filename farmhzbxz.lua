@@ -1,3 +1,14 @@
+-- Full Fly GUI V3 + NoClip + Low Graphics
+-- (gabungan dengan file aslinya)
+-- Sumber asli GUI: Fly GUI.txt (user) 
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+local player = Players.LocalPlayer
+
+-- Instances (original GUI + new buttons)
 local main = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
 local up = Instance.new("TextButton")
@@ -11,8 +22,12 @@ local closebutton = Instance.new("TextButton")
 local mini = Instance.new("TextButton")
 local mini2 = Instance.new("TextButton")
 
+-- NEW: noclip and lowgfx buttons
+local noclipBtn = Instance.new("TextButton")
+local lowgfxBtn = Instance.new("TextButton")
+
 main.Name = "main"
-main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+main.Parent = player:WaitForChild("PlayerGui")
 main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 main.ResetOnSpawn = false
 
@@ -20,7 +35,7 @@ Frame.Parent = main
 Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
 Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
 Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
-Frame.Size = UDim2.new(0, 190, 0, 57)
+Frame.Size = UDim2.new(0, 230, 0, 90) -- buat lebih besar agar muat tombol baru
 
 up.Name = "up"
 up.Parent = Frame
@@ -126,11 +141,33 @@ mini2.TextSize = 40
 mini2.Position = UDim2.new(0, 44, -1, 57)
 mini2.Visible = false
 
+-- NEW: noclip button properties
+noclipBtn.Name = "noclip"
+noclipBtn.Parent = Frame
+noclipBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+noclipBtn.Position = UDim2.new(0.68, 0, 0, 0)
+noclipBtn.Size = UDim2.new(0, 64, 0, 28)
+noclipBtn.Font = Enum.Font.SourceSans
+noclipBtn.Text = "NoClip: OFF"
+noclipBtn.TextColor3 = Color3.fromRGB(0,0,0)
+noclipBtn.TextSize = 14
+
+-- NEW: low graphics button properties
+lowgfxBtn.Name = "lowgfx"
+lowgfxBtn.Parent = Frame
+lowgfxBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+lowgfxBtn.Position = UDim2.new(0.68, 0, 0.49, 0)
+lowgfxBtn.Size = UDim2.new(0, 64, 0, 28)
+lowgfxBtn.Font = Enum.Font.SourceSans
+lowgfxBtn.Text = "LowGfx: OFF"
+lowgfxBtn.TextColor3 = Color3.fromRGB(0,0,0)
+lowgfxBtn.TextSize = 14
+
 speeds = 1
 
-local speaker = game:GetService("Players").LocalPlayer
+local speaker = player
 
-local chr = game.Players.LocalPlayer.Character
+local chr = player.Character
 local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
 
 nowe = false
@@ -144,8 +181,16 @@ Duration = 5;
 Frame.Active = true -- main = gui
 Frame.Draggable = true
 
-onof.MouseButton1Down:connect(function()
+-- -----------------------------------
+-- Fly logic (sama seperti aslinya)
+-- -----------------------------------
+-- (untuk ringkas di sini, kita preserve behavior asli dari file aslinya)
+-- [kode fly yang sudah ada di file asli tetap dipertahankan]
+-- Untuk mengurangi pengulangan, saya memasukkan kembali handler onof.MouseButton1Down
+-- (kode fly detail ada pada file asli — pastikan bagian fly diletakkan di sini)
+-- (di bawah ini saya meng-include kembali kode toggle fly seperti di file aslinya)
 
+onof.MouseButton1Down:connect(function()
     if nowe == true then
         nowe = false
 
@@ -168,29 +213,22 @@ onof.MouseButton1Down:connect(function()
     else 
         nowe = true
 
-
-
         for i = 1, speeds do
             spawn(function()
-
-                local hb = game:GetService("RunService").Heartbeat    
-
-
+                local hb = RunService.Heartbeat    
                 tpwalking = true
-                local chr = game.Players.LocalPlayer.Character
+                local chr = player.Character
                 local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
                 while tpwalking and hb:Wait() and chr and hum and hum.Parent do
                     if hum.MoveDirection.Magnitude > 0 then
                         chr:TranslateBy(hum.MoveDirection)
                     end
                 end
-
             end)
         end
-        game.Players.LocalPlayer.Character.Animate.Disabled = true
-        local Char = game.Players.LocalPlayer.Character
+        player.Character.Animate.Disabled = true
+        local Char = player.Character
         local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
-
         for i,v in next, Hum:GetPlayingAnimationTracks() do
             v:AdjustSpeed(0)
         end
@@ -212,14 +250,9 @@ onof.MouseButton1Down:connect(function()
         speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
     end
 
-
-
-
-    if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
-
-
-
-        local plr = game.Players.LocalPlayer
+    -- Berikut ini adalah bagian fly untuk R6/R15 (dipertahankan dari file asli)
+    if player.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
+        local plr = player
         local torso = plr.Character.Torso
         local flying = true
         local deb = true
@@ -227,7 +260,6 @@ onof.MouseButton1Down:connect(function()
         local lastctrl = {f = 0, b = 0, l = 0, r = 0}
         local maxspeed = 50
         local speed = 0
-
 
         local bg = Instance.new("BodyGyro", torso)
         bg.P = 9e4
@@ -239,9 +271,9 @@ onof.MouseButton1Down:connect(function()
         if nowe == true then
             plr.Character.Humanoid.PlatformStand = true
         end
-        while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
-            game:GetService("RunService").RenderStepped:Wait()
-
+        while nowe == true or player.Character.Humanoid.Health == 0 do
+            RunService.RenderStepped:Wait()
+            -- kontrol & kecepatan (sama seperti asli)
             if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
                 speed = speed+.5+(speed/maxspeed)
                 if speed > maxspeed then
@@ -254,15 +286,14 @@ onof.MouseButton1Down:connect(function()
                 end
             end
             if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+                bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p))*speed
                 lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
             elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+                bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p))*speed
             else
                 bv.velocity = Vector3.new(0,0,0)
             end
-            --    game.Players.LocalPlayer.Character.Animate.Disabled = true
-            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+            bg.cframe = workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
         end
         ctrl = {f = 0, b = 0, l = 0, r = 0}
         lastctrl = {f = 0, b = 0, l = 0, r = 0}
@@ -270,14 +301,12 @@ onof.MouseButton1Down:connect(function()
         bg:Destroy()
         bv:Destroy()
         plr.Character.Humanoid.PlatformStand = false
-        game.Players.LocalPlayer.Character.Animate.Disabled = false
+        player.Character.Animate.Disabled = false
         tpwalking = false
 
-
-
-
     else
-        local plr = game.Players.LocalPlayer
+        -- R15 code (sama seperti file asli)
+        local plr = player
         local UpperTorso = plr.Character.UpperTorso
         local flying = true
         local deb = true
@@ -285,7 +314,6 @@ onof.MouseButton1Down:connect(function()
         local lastctrl = {f = 0, b = 0, l = 0, r = 0}
         local maxspeed = 50
         local speed = 0
-
 
         local bg = Instance.new("BodyGyro", UpperTorso)
         bg.P = 9e4
@@ -297,9 +325,8 @@ onof.MouseButton1Down:connect(function()
         if nowe == true then
             plr.Character.Humanoid.PlatformStand = true
         end
-        while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+        while nowe == true or player.Character.Humanoid.Health == 0 do
             wait()
-
             if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
                 speed = speed+.5+(speed/maxspeed)
                 if speed > maxspeed then
@@ -312,15 +339,14 @@ onof.MouseButton1Down:connect(function()
                 end
             end
             if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+                bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p))*speed
                 lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
             elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+                bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p))*speed
             else
                 bv.velocity = Vector3.new(0,0,0)
             end
-
-            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+            bg.cframe = workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
         end
         ctrl = {f = 0, b = 0, l = 0, r = 0}
         lastctrl = {f = 0, b = 0, l = 0, r = 0}
@@ -328,30 +354,21 @@ onof.MouseButton1Down:connect(function()
         bg:Destroy()
         bv:Destroy()
         plr.Character.Humanoid.PlatformStand = false
-        game.Players.LocalPlayer.Character.Animate.Disabled = false
+        player.Character.Animate.Disabled = false
         tpwalking = false
-
-
-
     end
-
-
-
-
-
 end)
 
+-- up/down hold behaviour (sama seperti file asli)
 local tis
-
 up.MouseButton1Down:connect(function()
     tis = up.MouseEnter:connect(function()
         while tis do
             wait()
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,1,0)
+            player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0,1,0)
         end
     end)
 end)
-
 up.MouseLeave:connect(function()
     if tis then
         tis:Disconnect()
@@ -360,16 +377,14 @@ up.MouseLeave:connect(function()
 end)
 
 local dis
-
 down.MouseButton1Down:connect(function()
     dis = down.MouseEnter:connect(function()
         while dis do
             wait()
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,-1,0)
+            player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0,-1,0)
         end
     end)
 end)
-
 down.MouseLeave:connect(function()
     if dis then
         dis:Disconnect()
@@ -377,37 +392,28 @@ down.MouseLeave:connect(function()
     end
 end)
 
-
 game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
     wait(0.7)
     game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
     game.Players.LocalPlayer.Character.Animate.Disabled = false
-
 end)
-
 
 plus.MouseButton1Down:connect(function()
     speeds = speeds + 1
     speed.Text = speeds
     if nowe == true then
-
-
         tpwalking = false
         for i = 1, speeds do
             spawn(function()
-
-                local hb = game:GetService("RunService").Heartbeat    
-
-
+                local hb = RunService.Heartbeat    
                 tpwalking = true
-                local chr = game.Players.LocalPlayer.Character
+                local chr = player.Character
                 local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
                 while tpwalking and hb:Wait() and chr and hum and hum.Parent do
                     if hum.MoveDirection.Magnitude > 0 then
                         chr:TranslateBy(hum.MoveDirection)
                     end
                 end
-
             end)
         end
     end
@@ -424,19 +430,15 @@ mine.MouseButton1Down:connect(function()
             tpwalking = false
             for i = 1, speeds do
                 spawn(function()
-
-                    local hb = game:GetService("RunService").Heartbeat    
-
-
+                    local hb = RunService.Heartbeat    
                     tpwalking = true
-                    local chr = game.Players.LocalPlayer.Character
+                    local chr = player.Character
                     local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
                     while tpwalking and hb:Wait() and chr and hum and hum.Parent do
                         if hum.MoveDirection.Magnitude > 0 then
                             chr:TranslateBy(hum.MoveDirection)
                         end
                     end
-
                 end)
             end
         end
@@ -456,6 +458,8 @@ mini.MouseButton1Click:Connect(function()
     mine.Visible = false
     mini.Visible = false
     mini2.Visible = true
+    noclipBtn.Visible = false
+    lowgfxBtn.Visible = false
     main.Frame.BackgroundTransparency = 1
     closebutton.Position =  UDim2.new(0, 0, -1, 57)
 end)
@@ -469,115 +473,171 @@ mini2.MouseButton1Click:Connect(function()
     mine.Visible = true
     mini.Visible = true
     mini2.Visible = false
+    noclipBtn.Visible = true
+    lowgfxBtn.Visible = true
     main.Frame.BackgroundTransparency = 0 
-    closebutton.Position =  UDim2.new(0, 0, -1, 27)
+    closebutton.Position = UDim2.new(0, 0, -1, 27)
 end)
 
---====================================================
--- NOCLIP SYSTEM
---====================================================
-local function startNoclip()
-	task.spawn(function()
-		while noclipEnabled and Character.Parent do
-			for _, part in pairs(Character:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = false
-				end
-			end
-			RunService.Stepped:Wait()
-		end
-	end)
+-- -------------------------
+-- NoClip feature
+-- -------------------------
+local noclipEnabled = false
+local noclipConn
+
+local function enableNoclip()
+    noclipEnabled = true
+    noclipBtn.Text = "NoClip: ON"
+    -- koneksi per-step untuk memaksa CanCollide = false
+    if noclipConn then noclipConn:Disconnect() end
+    noclipConn = RunService.Stepped:Connect(function()
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
 end
 
---====================================================
--- LOW GRAPHIC SYSTEM
---====================================================
-local function enableLowGraphics()
-	for _, obj in pairs(workspace:GetDescendants()) do
-		if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-			obj:Destroy()
-		end
-	end
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+local function disableNoclip()
+    noclipEnabled = false
+    noclipBtn.Text = "NoClip: OFF"
+    if noclipConn then
+        noclipConn:Disconnect()
+        noclipConn = nil
+    end
+    -- ketika dimatikan, kembalikan CanCollide default (set true untuk safety)
+    local char = player.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
 end
 
-local function disableLowGraphics()
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+noclipBtn.MouseButton1Click:Connect(function()
+    if noclipEnabled then
+        disableNoclip()
+    else
+        enableNoclip()
+    end
+end)
+
+-- -------------------------
+-- Low Graphics feature (toggle & restore)
+-- -------------------------
+local lowgfxEnabled = false
+local lowgfxStore = {} -- menyimpan properti untuk restore
+
+local function setLowGraphics()
+    if lowgfxEnabled then return end
+    lowgfxEnabled = true
+    lowgfxBtn.Text = "LowGfx: ON"
+
+    -- iterate workspace untuk menonaktifkan particle, trail, beam, efek visual, decals, dan ubah material
+    for _, inst in ipairs(workspace:GetDescendants()) do
+        -- particle-like
+        if inst:IsA("ParticleEmitter") or inst:IsA("Trail") or inst:IsA("Beam") then
+            if not lowgfxStore[inst] then lowgfxStore[inst] = {} end
+            lowgfxStore[inst].Enabled = inst.Enabled
+            inst.Enabled = false
+        end
+
+        -- decals & textures
+        if inst:IsA("Decal") or inst:IsA("Texture") then
+            if not lowgfxStore[inst] then lowgfxStore[inst] = {} end
+            lowgfxStore[inst].Transparency = inst.Transparency
+            inst.Transparency = 1
+        end
+
+        -- surface appearance / material heavy items
+        if inst:IsA("BasePart") then
+            if not lowgfxStore[inst] then lowgfxStore[inst] = {} end
+            lowgfxStore[inst].Material = inst.Material
+            inst.Material = Enum.Material.SmoothPlastic
+        end
+
+        -- MeshPart texture
+        if inst:IsA("MeshPart") then
+            if not lowgfxStore[inst] then lowgfxStore[inst] = {} end
+            lowgfxStore[inst].TextureID = inst.TextureID
+            inst.TextureID = ""
+        end
+
+        -- SurfaceAppearance (menghapus detail appearance)
+        if inst:IsA("SurfaceAppearance") then
+            if not lowgfxStore[inst] then lowgfxStore[inst] = {} end
+            lowgfxStore[inst].Parent = inst.Parent
+            -- untuk sederhana, kita non-aktifkan dengan memindahkan sementara
+            pcall(function() inst.Parent = nil end)
+        end
+    end
+
+    -- Lighting adjustments sederhana untuk menurunkan beban
+    lowgfxStore["_Lighting"] = {
+        GlobalShadows = Lighting.GlobalShadows,
+        Brightness = Lighting.Brightness,
+        OutdoorAmbient = Lighting.OutdoorAmbient,
+    }
+    Lighting.GlobalShadows = false
+    Lighting.Brightness = 0
+    Lighting.OutdoorAmbient = Color3.fromRGB(128,128,128)
 end
 
---====================================================
--- GUI (contoh sederhana, bisa kamu rapihin sesuai style)
---====================================================
-local ScreenGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-ScreenGui.Name = "FlyGui"
+local function restoreGraphics()
+    if not lowgfxEnabled then return end
+    lowgfxEnabled = false
+    lowgfxBtn.Text = "LowGfx: OFF"
 
--- Tombol Fly
-local toggleFly = Instance.new("TextButton", ScreenGui)
-toggleFly.Text = "Fly"
-toggleFly.Size = UDim2.new(0, 100, 0, 30)
-toggleFly.Position = UDim2.new(0, 20, 0, 50)
+    -- restore dari store
+    for inst, props in pairs(lowgfxStore) do
+        if inst == "_Lighting" then
+            local p = props
+            Lighting.GlobalShadows = p.GlobalShadows
+            Lighting.Brightness = p.Brightness
+            Lighting.OutdoorAmbient = p.OutdoorAmbient
+        else
+            pcall(function()
+                if props.Enabled ~= nil and inst.Enabled ~= nil then inst.Enabled = props.Enabled end
+                if props.Transparency ~= nil and inst.Transparency ~= nil then inst.Transparency = props.Transparency end
+                if props.Material ~= nil and inst.Material ~= nil then inst.Material = props.Material end
+                if props.TextureID ~= nil and inst.TextureID ~= nil then inst.TextureID = props.TextureID end
+                if props.Parent ~= nil and (not inst.Parent) then inst.Parent = props.Parent end
+            end)
+        end
+    end
+    lowgfxStore = {}
+end
 
-toggleFly.MouseButton1Click:Connect(function()
-	if flyEnabled then
-		disableFly()
-		toggleFly.Text = "Fly"
-	else
-		enableFly()
-		toggleFly.Text = "Stop"
-	end
+lowgfxBtn.MouseButton1Click:Connect(function()
+    if lowgfxEnabled then
+        restoreGraphics()
+    else
+        setLowGraphics()
+    end
 end)
 
--- Tombol Noclip
-local toggleNoclip = Instance.new("TextButton", ScreenGui)
-toggleNoclip.Text = "Noclip: OFF"
-toggleNoclip.Size = UDim2.new(0, 100, 0, 30)
-toggleNoclip.Position = UDim2.new(0, 20, 0, 90)
-
-toggleNoclip.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	if noclipEnabled then
-		toggleNoclip.Text = "Noclip: ON"
-		startNoclip()
-	else
-		toggleNoclip.Text = "Noclip: OFF"
-	end
+-- Safety: saat karakter respawn, pastikan restore/clean
+Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    wait(0.7)
+    -- restore collisions jika noclip off
+    if not noclipEnabled then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+    -- kalau lowgfx nonaktif, jangan ubah; kalau aktif, aplikasikan ulang
+    if lowgfxEnabled then
+        -- reapply lowgfx to new objects (sederhana memanggil setLowGraphics lagi)
+        setLowGraphics()
+    end
 end)
 
--- Tombol Low Graphics
-local lowGfx = Instance.new("TextButton", ScreenGui)
-lowGfx.Text = "LowGfx"
-lowGfx.Size = UDim2.new(0, 100, 0, 30)
-lowGfx.Position = UDim2.new(0, 20, 0, 130)
-
-lowGfx.MouseButton1Click:Connect(function()
-	if lowGfx.Text == "LowGfx" then
-		enableLowGraphics()
-		lowGfx.Text = "Normal"
-	else
-		disableLowGraphics()
-		lowGfx.Text = "LowGfx"
-	end
-end)
-
--- Tombol Speed +
-local plus = Instance.new("TextButton", ScreenGui)
-plus.Text = "+"
-plus.Size = UDim2.new(0, 50, 0, 30)
-plus.Position = UDim2.new(0, 130, 0, 50)
-
-plus.MouseButton1Click:Connect(function()
-	flySpeed = flySpeed + 1
-end)
-
--- Tombol Speed -
-local minus = Instance.new("TextButton", ScreenGui)
-minus.Text = "-"
-minus.Size = UDim2.new(0, 50, 0, 30)
-minus.Position = UDim2.new(0, 190, 0, 50)
-
-minus.MouseButton1Click:Connect(function()
-	if flySpeed > 1 then
-		flySpeed = flySpeed - 1
-	end
-end)
-
+-- End of script
