@@ -1,6 +1,7 @@
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 -- Player references
@@ -11,9 +12,10 @@ local Humanoid = Character:WaitForChild("Humanoid")
 
 -- Variables
 local flyEnabled = false
-local flySpeed = 50
+local flySpeed = 60
 local noclipEnabled = false
 local currentFPS = 0
+local thumbstickVector = Vector3.zero
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -64,7 +66,27 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Fly function (pakai analog + kamera)
+-- Track thumbstick input (HP)
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        -- Ambil delta gerakan jempol (seperti arah analog)
+        local delta = input.Delta
+        if delta.Magnitude > 0 then
+            thumbstickVector = Vector3.new(delta.X, 0, -delta.Y)
+            if thumbstickVector.Magnitude > 1 then
+                thumbstickVector = thumbstickVector.Unit
+            end
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        thumbstickVector = Vector3.zero
+    end
+end)
+
+-- Fly function
 local flyBodyVelocity
 local flyBodyGyro
 
@@ -86,18 +108,13 @@ local function startFly()
     task.spawn(function()
         while flyEnabled and player.Character do
             local camCF = Workspace.CurrentCamera.CFrame
-            local moveDirection = Humanoid.MoveDirection
+            local moveDirection = Vector3.zero
 
-            if moveDirection.Magnitude > 0 then
+            -- gerak pakai thumbstick + kamera
+            if thumbstickVector.Magnitude > 0 then
                 local camForward = camCF.LookVector
                 local camRight = camCF.RightVector
-
-                -- Ambil input analog (X/Z) lalu ikuti arah kamera
-                local x = moveDirection.X
-                local z = moveDirection.Z
-                moveDirection = (camForward * z + camRight * x).Unit * flySpeed
-            else
-                moveDirection = Vector3.zero
+                moveDirection = (camForward * thumbstickVector.Z + camRight * thumbstickVector.X).Unit * flySpeed
             end
 
             flyBodyVelocity.Velocity = moveDirection
