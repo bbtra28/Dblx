@@ -40,11 +40,11 @@ title.Text = "Fly & Noclip GUI"
 title.TextColor3 = Color3.new(1,1,1)
 title.TextScaled = true
 
--- Tombol Hide/Show
+-- Tombol Hide/Show (pakai tulisan)
 local hideButton = Instance.new("TextButton", mainFrame)
-hideButton.Size = UDim2.new(0, 30, 0, 30)
-hideButton.Position = UDim2.new(1, -35, 0, 5)
-hideButton.Text = "-"
+hideButton.Size = UDim2.new(0, 60, 0, 30)
+hideButton.Position = UDim2.new(1, -65, 0, 5)
+hideButton.Text = "Hide"
 hideButton.TextScaled = true
 hideButton.BackgroundColor3 = Color3.fromRGB(100,100,100)
 hideButton.TextColor3 = Color3.new(1,1,1)
@@ -80,7 +80,7 @@ lowGfxButton.TextColor3 = Color3.new(1,1,1)
 lowGfxButton.TextScaled = true
 Instance.new("UICorner", lowGfxButton)
 
--- FPS Label
+-- FPS Label (diperkecil font)
 local fpsLabel = Instance.new("TextLabel", screenGui)
 fpsLabel.Size = UDim2.new(0, 120, 0, 20)
 fpsLabel.Position = UDim2.new(0, 10, 0, 10)
@@ -88,23 +88,17 @@ fpsLabel.TextColor3 = Color3.new(1,1,1)
 fpsLabel.BackgroundTransparency = 0.5
 fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "FPS: 0"
-fpsLabel.TextScaled = true
 fpsLabel.TextSize = 14
+fpsLabel.TextScaled = false
 
 -- Tombol naik & turun Y (tetap terlihat walau GUI di-hide)
-local controlFrame = Instance.new("Frame", screenGui)
-controlFrame.Size = UDim2.new(0, 140, 0, 140)
-controlFrame.Position = UDim2.new(0.8, 0, 0.65, 0)
-controlFrame.BackgroundTransparency = 1
-controlFrame.Active = true
-controlFrame.Draggable = true
-
 local function createButton(name, pos, text)
     local btn = Instance.new("TextButton", controlFrame)
     btn.Name = name
-    btn.Size = UDim2.new(0, 60, 0, 60)
+    btn.Size = UDim2.new(0, 40, 0, 40) -- kecil
     btn.Position = pos
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.BackgroundTransparency = 0.3 -- transparan
     btn.TextColor3 = Color3.new(1,1,1)
     btn.Text = text
     btn.TextScaled = true
@@ -112,8 +106,8 @@ local function createButton(name, pos, text)
     return btn
 end
 
-local upYBtn = createButton("UpY", UDim2.new(0, 0, 0, 0), "⤴")
-local downYBtn = createButton("DownY", UDim2.new(0, 0, 0.5, 0), "⤵")
+local upYBtn = createButton("UpY", UDim2.new(0, 0, 0, 0), "↑")
+local downYBtn = createButton("DownY", UDim2.new(0, 0, 0.5, 0), "↓")
 
 local controlState = { UpY = false, DownY = false }
 
@@ -124,7 +118,7 @@ end
 bindButton(upYBtn, "UpY")
 bindButton(downYBtn, "DownY")
 
--- Fly function
+-- Fly
 local flyBodyVelocity
 local flyBodyGyro
 local function startFly()
@@ -233,7 +227,7 @@ lowGfxButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Hide button toggle
+-- Hide button toggle (pakai tulisan)
 hideButton.MouseButton1Click:Connect(function()
     guiVisible = not guiVisible
     for _, obj in pairs(screenGui:GetChildren()) do
@@ -241,7 +235,7 @@ hideButton.MouseButton1Click:Connect(function()
             obj.Visible = guiVisible
         end
     end
-    hideButton.Text = guiVisible and "-" or "+"
+    hideButton.Text = guiVisible and "Hide" or "Show"
 end)
 
 -- FPS Checker
