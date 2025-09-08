@@ -65,37 +65,43 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Fly function
+-- Fly function (Fix Movement)
 local flyBodyVelocity
 local flyBodyGyro
 
 local function startFly()
+    if flyBodyVelocity then flyBodyVelocity:Destroy() end
+    if flyBodyGyro then flyBodyGyro:Destroy() end
+
     flyBodyVelocity = Instance.new("BodyVelocity")
     flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    flyBodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     flyBodyVelocity.Parent = HumanoidRootPart
 
     flyBodyGyro = Instance.new("BodyGyro")
-    flyBodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
     flyBodyGyro.P = 9000
+    flyBodyGyro.CFrame = HumanoidRootPart.CFrame
     flyBodyGyro.Parent = HumanoidRootPart
 
-    Humanoid.PlatformStand = true
+    Humanoid.PlatformStand = false -- jangan bikin kaku
 
     task.spawn(function()
-        while flyEnabled do
-            local moveDirection = Vector3.new(0, 0, 0)
+        while flyEnabled and player.Character do
+            local camCF = Workspace.CurrentCamera.CFrame
+            local moveDirection = Vector3.zero
+
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDirection += Workspace.CurrentCamera.CFrame.LookVector
+                moveDirection += Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
             end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDirection -= Workspace.CurrentCamera.CFrame.LookVector
+                moveDirection -= Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
             end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDirection -= Workspace.CurrentCamera.CFrame.RightVector
+                moveDirection -= Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
             end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDirection += Workspace.CurrentCamera.CFrame.RightVector
+                moveDirection += Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
             end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                 moveDirection += Vector3.new(0, 1, 0)
@@ -109,21 +115,20 @@ local function startFly()
             end
 
             flyBodyVelocity.Velocity = moveDirection
-            flyBodyGyro.CFrame = Workspace.CurrentCamera.CFrame
+            flyBodyGyro.CFrame = camCF
 
-            task.wait()
+            RunService.Heartbeat:Wait()
         end
 
-        if flyBodyVelocity then flyBodyVelocity:Destroy() end
-        if flyBodyGyro then flyBodyGyro:Destroy() end
-        Humanoid.PlatformStand = false
+        if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
+        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
     end)
 end
 
 -- Noclip function
 local function startNoclip()
     task.spawn(function()
-        while noclipEnabled do
+        while noclipEnabled and player.Character do
             for _, part in pairs(Character:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
