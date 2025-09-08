@@ -1,7 +1,6 @@
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 -- Player references
@@ -41,7 +40,7 @@ local flyButton = Instance.new("TextButton", mainFrame)
 flyButton.Size = UDim2.new(1, -20, 0, 40)
 flyButton.Position = UDim2.new(0, 10, 0, 40)
 flyButton.Text = "Fly: OFF"
-flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
+flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
 flyButton.TextColor3 = Color3.new(1,1,1)
 flyButton.TextScaled = true
 Instance.new("UICorner", flyButton)
@@ -50,7 +49,7 @@ local noclipButton = Instance.new("TextButton", mainFrame)
 noclipButton.Size = UDim2.new(1, -20, 0, 40)
 noclipButton.Position = UDim2.new(0, 10, 0, 90)
 noclipButton.Text = "Noclip: OFF"
-noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
+noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
 noclipButton.TextColor3 = Color3.new(1,1,1)
 noclipButton.TextScaled = true
 Instance.new("UICorner", noclipButton)
@@ -65,7 +64,56 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Fly function (Fix Movement)
+-- Mobile Controls
+local controlFrame = Instance.new("Frame", screenGui)
+controlFrame.Size = UDim2.new(0, 200, 0, 200)
+controlFrame.Position = UDim2.new(0.75, 0, 0.65, 0)
+controlFrame.BackgroundTransparency = 1
+
+local function createButton(name, pos, text)
+    local btn = Instance.new("TextButton", controlFrame)
+    btn.Name = name
+    btn.Size = UDim2.new(0, 60, 0, 60)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Text = text
+    btn.TextScaled = true
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+-- Tombol arah
+local upBtn = createButton("Up", UDim2.new(0.33, 0, 0, 0), "↑")
+local downBtn = createButton("Down", UDim2.new(0.33, 0, 0.66, 0), "↓")
+local leftBtn = createButton("Left", UDim2.new(0, 0, 0.33, 0), "←")
+local rightBtn = createButton("Right", UDim2.new(0.66, 0, 0.33, 0), "→")
+local jumpBtn = createButton("Jump", UDim2.new(1.1, 0, 0.2, 0), "⤴")
+local downYBtn = createButton("DownY", UDim2.new(1.1, 0, 0.55, 0), "⤵")
+
+-- Table kontrol
+local controlState = {
+    Up = false,
+    Down = false,
+    Left = false,
+    Right = false,
+    Jump = false,
+    DownY = false
+}
+
+local function bindButton(btn, key)
+    btn.MouseButton1Down:Connect(function() controlState[key] = true end)
+    btn.MouseButton1Up:Connect(function() controlState[key] = false end)
+end
+
+bindButton(upBtn, "Up")
+bindButton(downBtn, "Down")
+bindButton(leftBtn, "Left")
+bindButton(rightBtn, "Right")
+bindButton(jumpBtn, "Jump")
+bindButton(downYBtn, "DownY")
+
+-- Fly function
 local flyBodyVelocity
 local flyBodyGyro
 
@@ -84,29 +132,27 @@ local function startFly()
     flyBodyGyro.CFrame = HumanoidRootPart.CFrame
     flyBodyGyro.Parent = HumanoidRootPart
 
-    Humanoid.PlatformStand = false -- jangan bikin kaku
-
     task.spawn(function()
         while flyEnabled and player.Character do
             local camCF = Workspace.CurrentCamera.CFrame
             local moveDirection = Vector3.zero
 
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            if controlState.Up then
                 moveDirection += Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            if controlState.Down then
                 moveDirection -= Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            if controlState.Left then
                 moveDirection -= Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            if controlState.Right then
                 moveDirection += Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            if controlState.Jump then
                 moveDirection += Vector3.new(0, 1, 0)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            if controlState.DownY then
                 moveDirection -= Vector3.new(0, 1, 0)
             end
 
@@ -139,16 +185,16 @@ local function startNoclip()
     end)
 end
 
--- Button connections + Warna indikator
+-- Button connections
 flyButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
     if flyEnabled then
         flyButton.Text = "Fly: ON"
-        flyButton.BackgroundColor3 = Color3.fromRGB(50,200,50) -- Hijau = ON
+        flyButton.BackgroundColor3 = Color3.fromRGB(50,200,50)
         startFly()
     else
         flyButton.Text = "Fly: OFF"
-        flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
+        flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
     end
 end)
 
@@ -156,11 +202,11 @@ noclipButton.MouseButton1Click:Connect(function()
     noclipEnabled = not noclipEnabled
     if noclipEnabled then
         noclipButton.Text = "Noclip: ON"
-        noclipButton.BackgroundColor3 = Color3.fromRGB(50,200,50) -- Hijau = ON
+        noclipButton.BackgroundColor3 = Color3.fromRGB(50,200,50)
         startNoclip()
     else
         noclipButton.Text = "Noclip: OFF"
-        noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
+        noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
     end
 end)
 
