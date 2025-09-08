@@ -64,18 +64,20 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Tombol naik & turun Y
+-- Tombol naik & turun Y (kecil + draggable)
 local controlFrame = Instance.new("Frame", screenGui)
-controlFrame.Size = UDim2.new(0, 140, 0, 140)
-controlFrame.Position = UDim2.new(0.8, 0, 0.65, 0)
+controlFrame.Size = UDim2.new(0, 100, 0, 100)
+controlFrame.Position = UDim2.new(0.85, 0, 0.65, 0)
 controlFrame.BackgroundTransparency = 1
+controlFrame.Active = true
+controlFrame.Draggable = true  -- Bisa digeser
 
 local function createButton(name, pos, text)
     local btn = Instance.new("TextButton", controlFrame)
     btn.Name = name
-    btn.Size = UDim2.new(0, 60, 0, 60)
+    btn.Size = UDim2.new(0, 40, 0, 40) -- DIPERKECIL
     btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.new(1,1,1)
     btn.Text = text
     btn.TextScaled = true
@@ -83,9 +85,11 @@ local function createButton(name, pos, text)
     return btn
 end
 
-local upYBtn = createButton("UpY", UDim2.new(0, 0, 0, 0), "⤴")
-local downYBtn = createButton("DownY", UDim2.new(0, 0, 0.5, 0), "⤵")
+-- Tombol lebih kecil
+local upYBtn = createButton("UpY", UDim2.new(0.25, 0, 0, 0), "⤴")
+local downYBtn = createButton("DownY", UDim2.new(0.25, 0, 0.55, 0), "⤵")
 
+-- State tombol
 local controlState = { UpY = false, DownY = false }
 
 local function bindButton(btn, key)
@@ -194,3 +198,4 @@ RunService.RenderStepped:Connect(function()
         fpsLabel.Text = "Current FPS: " .. tostring(currentFPS)
     end
 end)
+
