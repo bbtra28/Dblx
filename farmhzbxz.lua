@@ -1,6 +1,7 @@
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
 -- Player references
@@ -14,6 +15,8 @@ local flyEnabled = false
 local flySpeed = 50
 local noclipEnabled = false
 local flyY = 0
+local guiVisible = true
+local lowGraphicEnabled = false
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -23,12 +26,22 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 200, 0, 150)
+mainFrame.Size = UDim2.new(0, 200, 0, 190)
 mainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.Active = true
 mainFrame.Draggable = true
+
+-- Hide Button
+local hideButton = Instance.new("TextButton", mainFrame)
+hideButton.Size = UDim2.new(0, 40, 0, 30)
+hideButton.Position = UDim2.new(1, -45, 0, 5)
+hideButton.Text = "-"
+hideButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
+hideButton.TextColor3 = Color3.new(1,1,1)
+hideButton.TextScaled = true
+Instance.new("UICorner", hideButton)
 
 -- Fly Button
 local flyButton = Instance.new("TextButton", mainFrame)
@@ -49,6 +62,16 @@ noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
 noclipButton.TextColor3 = Color3.new(1,1,1)
 noclipButton.TextScaled = true
 Instance.new("UICorner", noclipButton)
+
+-- Low Graphic Button
+local lowGraphicButton = Instance.new("TextButton", mainFrame)
+lowGraphicButton.Size = UDim2.new(1, -20, 0, 40)
+lowGraphicButton.Position = UDim2.new(0, 10, 0, 140)
+lowGraphicButton.Text = "Low GFX: OFF"
+lowGraphicButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+lowGraphicButton.TextColor3 = Color3.new(1,1,1)
+lowGraphicButton.TextScaled = true
+Instance.new("UICorner", lowGraphicButton)
 
 -- Tombol naik/turun (draggable)
 local controlFrame = Instance.new("Frame", screenGui)
@@ -76,10 +99,10 @@ downBtn.TextColor3 = Color3.new(1,1,1)
 downBtn.TextScaled = true
 Instance.new("UICorner", downBtn)
 
--- FPS Counter
+-- FPS Counter (lebih kecil)
 local fpsLabel = Instance.new("TextLabel", screenGui)
-fpsLabel.Size = UDim2.new(0, 200, 0, 50)
-fpsLabel.Position = UDim2.new(1, -210, 0, 10)
+fpsLabel.Size = UDim2.new(0, 100, 0, 25)
+fpsLabel.Position = UDim2.new(1, -110, 0, 10)
 fpsLabel.BackgroundTransparency = 0.3
 fpsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 fpsLabel.TextColor3 = Color3.new(1,1,1)
@@ -101,7 +124,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Handle tekan/lepas tombol naik turun
+-- Handle tombol naik/turun
 upBtn.MouseButton1Down:Connect(function() flyY = 1 end)
 upBtn.MouseButton1Up:Connect(function() flyY = 0 end)
 downBtn.MouseButton1Down:Connect(function() flyY = -1 end)
@@ -128,10 +151,7 @@ local function startFly()
 
     task.spawn(function()
         while flyEnabled and player.Character do
-            local camCF = Workspace.CurrentCamera.CFrame
             local moveDir = Humanoid.MoveDirection
-
-            -- Tambah naik/turun
             moveDir = Vector3.new(moveDir.X, flyY, moveDir.Z)
 
             if moveDir.Magnitude > 0 then
@@ -139,7 +159,7 @@ local function startFly()
             end
 
             flyBodyVelocity.Velocity = moveDir
-            flyBodyGyro.CFrame = camCF
+            flyBodyGyro.CFrame = Workspace.CurrentCamera.CFrame
 
             RunService.Heartbeat:Wait()
         end
@@ -161,6 +181,28 @@ local function startNoclip()
             RunService.Stepped:Wait()
         end
     end)
+end
+
+-- Low Graphic function
+local function setLowGraphic(state)
+    if state then
+        -- matiin efek & bikin ringan
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Material = Enum.Material.Plastic
+                v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Enabled = false
+            end
+        end
+    else
+        -- restore default (sebatas mungkin)
+        Lighting.GlobalShadows = true
+    end
 end
 
 -- Button connections
@@ -186,4 +228,28 @@ noclipButton.MouseButton1Click:Connect(function()
         noclipButton.Text = "Noclip: OFF"
         noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
     end
+end)
+
+lowGraphicButton.MouseButton1Click:Connect(function()
+    lowGraphicEnabled = not lowGraphicEnabled
+    if lowGraphicEnabled then
+        lowGraphicButton.Text = "Low GFX: ON"
+        lowGraphicButton.BackgroundColor3 = Color3.fromRGB(50,200,50)
+        setLowGraphic(true)
+    else
+        lowGraphicButton.Text = "Low GFX: OFF"
+        lowGraphicButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+        setLowGraphic(false)
+    end
+end)
+
+-- Hide button toggle
+hideButton.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+    for _, obj in pairs(screenGui:GetChildren()) do
+        if obj ~= fpsLabel then
+            obj.Visible = guiVisible
+        end
+    end
+    hideButton.Text = guiVisible and "-" or "+"
 end)
