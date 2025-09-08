@@ -17,8 +17,10 @@ local noclipEnabled = false
 local currentFPS = 0
 
 -- GUI
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FlyNoclipGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 200, 0, 150)
@@ -39,19 +41,19 @@ local flyButton = Instance.new("TextButton", mainFrame)
 flyButton.Size = UDim2.new(1, -20, 0, 40)
 flyButton.Position = UDim2.new(0, 10, 0, 40)
 flyButton.Text = "Fly: OFF"
-flyButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
 flyButton.TextColor3 = Color3.new(1,1,1)
 flyButton.TextScaled = true
-flyButton.UICorner = Instance.new("UICorner", flyButton)
+Instance.new("UICorner", flyButton)
 
 local noclipButton = Instance.new("TextButton", mainFrame)
 noclipButton.Size = UDim2.new(1, -20, 0, 40)
 noclipButton.Position = UDim2.new(0, 10, 0, 90)
 noclipButton.Text = "Noclip: OFF"
-noclipButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
 noclipButton.TextColor3 = Color3.new(1,1,1)
 noclipButton.TextScaled = true
-noclipButton.UICorner = Instance.new("UICorner", noclipButton)
+Instance.new("UICorner", noclipButton)
 
 -- FPS Label
 local fpsLabel = Instance.new("TextLabel", screenGui)
@@ -132,20 +134,28 @@ local function startNoclip()
     end)
 end
 
--- Button connections
+-- Button connections + Warna indikator
 flyButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
-    flyButton.Text = "Fly: " .. (flyEnabled and "ON" or "OFF")
     if flyEnabled then
+        flyButton.Text = "Fly: ON"
+        flyButton.BackgroundColor3 = Color3.fromRGB(50,200,50) -- Hijau = ON
         startFly()
+    else
+        flyButton.Text = "Fly: OFF"
+        flyButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
     end
 end)
 
 noclipButton.MouseButton1Click:Connect(function()
     noclipEnabled = not noclipEnabled
-    noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     if noclipEnabled then
+        noclipButton.Text = "Noclip: ON"
+        noclipButton.BackgroundColor3 = Color3.fromRGB(50,200,50) -- Hijau = ON
         startNoclip()
+    else
+        noclipButton.Text = "Noclip: OFF"
+        noclipButton.BackgroundColor3 = Color3.fromRGB(200,50,50) -- Merah = OFF
     end
 end)
 
