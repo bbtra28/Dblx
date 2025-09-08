@@ -64,43 +64,7 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Tombol naik & turun Y (kecil + draggable)
-local controlFrame = Instance.new("Frame", screenGui)
-controlFrame.Size = UDim2.new(0, 100, 0, 100)
-controlFrame.Position = UDim2.new(0.85, 0, 0.65, 0)
-controlFrame.BackgroundTransparency = 1
-controlFrame.Active = true
-controlFrame.Draggable = true  -- Bisa digeser
-
-local function createButton(name, pos, text)
-    local btn = Instance.new("TextButton", controlFrame)
-    btn.Name = name
-    btn.Size = UDim2.new(0, 40, 0, 40) -- DIPERKECIL
-    btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Text = text
-    btn.TextScaled = true
-    Instance.new("UICorner", btn)
-    return btn
-end
-
--- Tombol lebih kecil
-local upYBtn = createButton("UpY", UDim2.new(0.25, 0, 0, 0), "⤴")
-local downYBtn = createButton("DownY", UDim2.new(0.25, 0, 0.55, 0), "⤵")
-
--- State tombol
-local controlState = { UpY = false, DownY = false }
-
-local function bindButton(btn, key)
-    btn.MouseButton1Down:Connect(function() controlState[key] = true end)
-    btn.MouseButton1Up:Connect(function() controlState[key] = false end)
-end
-
-bindButton(upYBtn, "UpY")
-bindButton(downYBtn, "DownY")
-
--- Fly function pakai analog (Humanoid.MoveDirection)
+-- Fly function (pakai analog + kamera)
 local flyBodyVelocity
 local flyBodyGyro
 
@@ -122,17 +86,18 @@ local function startFly()
     task.spawn(function()
         while flyEnabled and player.Character do
             local camCF = Workspace.CurrentCamera.CFrame
-            local moveDirection = Humanoid.MoveDirection -- dari analog bawaan
-
-            if controlState.UpY then
-                moveDirection += Vector3.new(0, 1, 0)
-            end
-            if controlState.DownY then
-                moveDirection -= Vector3.new(0, 1, 0)
-            end
+            local moveDirection = Humanoid.MoveDirection
 
             if moveDirection.Magnitude > 0 then
-                moveDirection = moveDirection.Unit * flySpeed
+                local camForward = camCF.LookVector
+                local camRight = camCF.RightVector
+
+                -- Ambil input analog (X/Z) lalu ikuti arah kamera
+                local x = moveDirection.X
+                local z = moveDirection.Z
+                moveDirection = (camForward * z + camRight * x).Unit * flySpeed
+            else
+                moveDirection = Vector3.zero
             end
 
             flyBodyVelocity.Velocity = moveDirection
@@ -198,4 +163,3 @@ RunService.RenderStepped:Connect(function()
         fpsLabel.Text = "Current FPS: " .. tostring(currentFPS)
     end
 end)
-
