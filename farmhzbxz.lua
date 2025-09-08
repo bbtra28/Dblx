@@ -46,7 +46,6 @@ up.Parent = Frame
 up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
 up.Position = UDim2.new(0, 0, 0.3, 0)
 up.Size = UDim2.new(0, 60, 0, 28)
-up.Font = Enum.Font.SourceSans
 up.Text = "UP"
 
 -- Tombol DOWN
@@ -55,7 +54,6 @@ down.Parent = Frame
 down.BackgroundColor3 = Color3.fromRGB(215, 255, 121)
 down.Position = UDim2.new(0, 0, 0.55, 0)
 down.Size = UDim2.new(0, 60, 0, 28)
-down.Font = Enum.Font.SourceSans
 down.Text = "DOWN"
 
 -- Tombol Fly
@@ -110,25 +108,41 @@ mini2.Visible = false
 ----------------------------------------------------------------
 -- Logic Fly
 local flying = false
+local bg, bv
 
 flyBtn.MouseButton1Click:Connect(function()
 	flying = not flying
+	local hrp = character:WaitForChild("HumanoidRootPart")
 	if flying then
 		flyBtn.Text = "Flying..."
-		local hrp = character:WaitForChild("HumanoidRootPart")
-		RunService.Heartbeat:Connect(function()
+		bg = Instance.new("BodyGyro", hrp)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bg.cframe = hrp.CFrame
+
+		bv = Instance.new("BodyVelocity", hrp)
+		bv.velocity = Vector3.new(0,0,0)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+		RunService.RenderStepped:Connect(function()
 			if flying and hrp then
-				if speaker.Character:FindFirstChildOfClass("Humanoid").MoveDirection.Magnitude > 0 then
-					hrp.CFrame = hrp.CFrame + speaker.Character.Humanoid.MoveDirection
-				end
+				local camCF = workspace.CurrentCamera.CFrame
+				local moveDir = speaker.Character.Humanoid.MoveDirection
+				bv.velocity = (camCF.LookVector * moveDir.Z + camCF.RightVector * moveDir.X) * 50
+				bg.cframe = camCF
+			elseif bv and bg then
+				bv:Destroy()
+				bg:Destroy()
 			end
 		end)
 	else
 		flyBtn.Text = "Fly"
+		if bv then bv:Destroy() bv=nil end
+		if bg then bg:Destroy() bg=nil end
 	end
 end)
 
--- UP & DOWN
+-- UP & DOWN manual
 up.MouseButton1Click:Connect(function()
 	if character:FindFirstChild("HumanoidRootPart") then
 		character.HumanoidRootPart.CFrame *= CFrame.new(0,2,0)
