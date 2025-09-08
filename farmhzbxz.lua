@@ -64,10 +64,10 @@ fpsLabel.BackgroundColor3 = Color3.new(0,0,0)
 fpsLabel.Text = "Current FPS: 0"
 fpsLabel.TextScaled = true
 
--- Mobile Controls
+-- Tombol naik & turun Y
 local controlFrame = Instance.new("Frame", screenGui)
-controlFrame.Size = UDim2.new(0, 200, 0, 200)
-controlFrame.Position = UDim2.new(0.75, 0, 0.65, 0)
+controlFrame.Size = UDim2.new(0, 140, 0, 140)
+controlFrame.Position = UDim2.new(0.8, 0, 0.65, 0)
 controlFrame.BackgroundTransparency = 1
 
 local function createButton(name, pos, text)
@@ -83,37 +83,20 @@ local function createButton(name, pos, text)
     return btn
 end
 
--- Tombol arah
-local upBtn = createButton("Up", UDim2.new(0.33, 0, 0, 0), "↑")
-local downBtn = createButton("Down", UDim2.new(0.33, 0, 0.66, 0), "↓")
-local leftBtn = createButton("Left", UDim2.new(0, 0, 0.33, 0), "←")
-local rightBtn = createButton("Right", UDim2.new(0.66, 0, 0.33, 0), "→")
-local jumpBtn = createButton("Jump", UDim2.new(1.1, 0, 0.2, 0), "⤴")
-local downYBtn = createButton("DownY", UDim2.new(1.1, 0, 0.55, 0), "⤵")
+local upYBtn = createButton("UpY", UDim2.new(0, 0, 0, 0), "⤴")
+local downYBtn = createButton("DownY", UDim2.new(0, 0, 0.5, 0), "⤵")
 
--- Table kontrol
-local controlState = {
-    Up = false,
-    Down = false,
-    Left = false,
-    Right = false,
-    Jump = false,
-    DownY = false
-}
+local controlState = { UpY = false, DownY = false }
 
 local function bindButton(btn, key)
     btn.MouseButton1Down:Connect(function() controlState[key] = true end)
     btn.MouseButton1Up:Connect(function() controlState[key] = false end)
 end
 
-bindButton(upBtn, "Up")
-bindButton(downBtn, "Down")
-bindButton(leftBtn, "Left")
-bindButton(rightBtn, "Right")
-bindButton(jumpBtn, "Jump")
+bindButton(upYBtn, "UpY")
 bindButton(downYBtn, "DownY")
 
--- Fly function
+-- Fly function pakai analog (Humanoid.MoveDirection)
 local flyBodyVelocity
 local flyBodyGyro
 
@@ -135,21 +118,9 @@ local function startFly()
     task.spawn(function()
         while flyEnabled and player.Character do
             local camCF = Workspace.CurrentCamera.CFrame
-            local moveDirection = Vector3.zero
+            local moveDirection = Humanoid.MoveDirection -- dari analog bawaan
 
-            if controlState.Up then
-                moveDirection += Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
-            end
-            if controlState.Down then
-                moveDirection -= Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
-            end
-            if controlState.Left then
-                moveDirection -= Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
-            end
-            if controlState.Right then
-                moveDirection += Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
-            end
-            if controlState.Jump then
+            if controlState.UpY then
                 moveDirection += Vector3.new(0, 1, 0)
             end
             if controlState.DownY then
