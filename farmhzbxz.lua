@@ -1,5 +1,4 @@
--- Fly + Noclip GUI (Mobile Friendly, Fix Naik Turun)
--- Analog atas = naik, analog bawah = turun
+-- Fly + Noclip GUI (Mobile, Kamera Naik/Turun, Draggable + Hide/Show)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -18,13 +17,16 @@ local bodyVel, bodyGyro
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "FlyNoclipGUI"
 
+-- Main frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 160, 0, 100)
 frame.Position = UDim2.new(0.05, 0, 0.7, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.Active = true
 frame.Draggable = true
+frame.Visible = true
 
+-- Fly button
 local flyBtn = Instance.new("TextButton", frame)
 flyBtn.Size = UDim2.new(0.9, 0, 0.4, 0)
 flyBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -34,6 +36,7 @@ flyBtn.TextColor3 = Color3.new(1, 1, 1)
 flyBtn.Font = Enum.Font.SourceSansBold
 flyBtn.TextSize = 20
 
+-- Noclip button
 local noclipBtn = Instance.new("TextButton", frame)
 noclipBtn.Size = UDim2.new(0.9, 0, 0.4, 0)
 noclipBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
@@ -42,6 +45,16 @@ noclipBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 50)
 noclipBtn.TextColor3 = Color3.new(1, 1, 1)
 noclipBtn.Font = Enum.Font.SourceSansBold
 noclipBtn.TextSize = 20
+
+-- Show/Hide button
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0, 80, 0, 30)
+toggleBtn.Position = UDim2.new(0.05, 0, 0.62, 0)
+toggleBtn.Text = "Hide GUI"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.TextSize = 18
 
 -- Function Fly
 local function startFly()
@@ -60,20 +73,8 @@ local function startFly()
             local moveDir = humanoid.MoveDirection
 
             if moveDir.Magnitude > 0 then
-                local forward = cam.CFrame.LookVector
-                local right = cam.CFrame.RightVector
-                local up = cam.CFrame.UpVector
-
-                -- Buat forward/right tetap datar (tanpa Y)
-                forward = Vector3.new(forward.X, 0, forward.Z).Unit
-                right = Vector3.new(right.X, 0, right.Z).Unit
-
-                -- Mapping analog
-                local move = (forward * moveDir.Z) + (right * moveDir.X)
-
-                -- Analog atas = naik, bawah = turun
-                move = move + (up * moveDir.Y)
-
+                -- Kamera menentukan naik/turun
+                local move = (cam.CFrame.LookVector * moveDir.Z) + (cam.CFrame.RightVector * moveDir.X)
                 bodyVel.Velocity = move * speed
             else
                 bodyVel.Velocity = Vector3.zero
@@ -118,4 +119,10 @@ noclipBtn.MouseButton1Click:Connect(function()
         noclipBtn.Text = "Noclip: OFF"
         noclipBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 50)
     end
+end)
+
+-- Toggle Button
+toggleBtn.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+    toggleBtn.Text = frame.Visible and "Hide GUI" or "Show GUI"
 end)
