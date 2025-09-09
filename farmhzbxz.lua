@@ -1,5 +1,6 @@
--- Fly GUI V3 dengan Noclip & Low GFX Toggle (versi lama TranslateBy)
+-- Fly GUI V3 (Versi Asli) + Noclip & Low GFX
 
+-- Instances
 local main = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
 local up = Instance.new("TextButton")
@@ -12,7 +13,10 @@ local mine = Instance.new("TextButton")
 local closebutton = Instance.new("TextButton")
 local mini = Instance.new("TextButton")
 local mini2 = Instance.new("TextButton")
+local noclipBtn = Instance.new("TextButton")
+local gfxBtn = Instance.new("TextButton")
 
+-- Properties GUI
 main.Name = "main"
 main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -22,13 +26,14 @@ Frame.Parent = main
 Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
 Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
 Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
-Frame.Size = UDim2.new(0, 190, 0, 120) -- diperbesar sedikit untuk tombol tambahan
+Frame.Size = UDim2.new(0, 190, 0, 150)
 Frame.Active = true
 Frame.Draggable = true
 
 up.Name = "up"
 up.Parent = Frame
 up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
+up.Position = UDim2.new(0, 0, 0, 0)
 up.Size = UDim2.new(0, 44, 0, 28)
 up.Font = Enum.Font.SourceSans
 up.Text = "UP"
@@ -103,35 +108,34 @@ mine.TextSize = 14.000
 mine.TextWrapped = true
 
 closebutton.Name = "Close"
-closebutton.Parent = main.Frame
+closebutton.Parent = Frame
 closebutton.BackgroundColor3 = Color3.fromRGB(225, 25, 0)
-closebutton.Font = "SourceSans"
+closebutton.Font = Enum.Font.SourceSans
 closebutton.Size = UDim2.new(0, 45, 0, 28)
 closebutton.Text = "X"
 closebutton.TextSize = 30
 closebutton.Position = UDim2.new(0, 0, -1, 27)
 
 mini.Name = "minimize"
-mini.Parent = main.Frame
+mini.Parent = Frame
 mini.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
-mini.Font = "SourceSans"
+mini.Font = Enum.Font.SourceSans
 mini.Size = UDim2.new(0, 45, 0, 28)
 mini.Text = "-"
 mini.TextSize = 40
 mini.Position = UDim2.new(0, 44, -1, 27)
 
 mini2.Name = "minimize2"
-mini2.Parent = main.Frame
+mini2.Parent = Frame
 mini2.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
-mini2.Font = "SourceSans"
+mini2.Font = Enum.Font.SourceSans
 mini2.Size = UDim2.new(0, 45, 0, 28)
 mini2.Text = "+"
 mini2.TextSize = 40
 mini2.Position = UDim2.new(0, 44, -1, 57)
 mini2.Visible = false
 
--- Tombol tambahan: Noclip & Low GFX
-local noclipBtn = Instance.new("TextButton")
+-- Tombol tambahan
 noclipBtn.Name = "noclipBtn"
 noclipBtn.Parent = Frame
 noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 150)
@@ -142,7 +146,6 @@ noclipBtn.Text = "Noclip: OFF"
 noclipBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
 noclipBtn.TextSize = 14.000
 
-local gfxBtn = Instance.new("TextButton")
 gfxBtn.Name = "gfxBtn"
 gfxBtn.Parent = Frame
 gfxBtn.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
@@ -153,10 +156,70 @@ gfxBtn.Text = "Low GFX: OFF"
 gfxBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
 gfxBtn.TextSize = 14.000
 
--- Logic tambahan
+-- Variables
 local RunService = game:GetService("RunService")
 local noclipEnabled = false
 local gfxEnabled = false
+local tpwalking = false
+local speaker = game:GetService("Players").LocalPlayer
+local speeds = 1
+
+-- Fly Logic (versi lama TranslateBy)
+onof.MouseButton1Click:Connect(function()
+    if tpwalking then
+        tpwalking = false
+        onof.Text = "fly"
+    else
+        tpwalking = true
+        onof.Text = "stop"
+        local hb = RunService.Heartbeat
+        while tpwalking and hb:Wait() and speaker.Character and speaker.Character:FindFirstChildWhichIsA("Humanoid") do
+            local hum = speaker.Character:FindFirstChildWhichIsA("Humanoid")
+            if hum then
+                hum.Parent:TranslateBy(hum.MoveDirection * speeds)
+            end
+        end
+    end
+end)
+
+-- UP / DOWN control
+up.MouseButton1Click:Connect(function()
+    if speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart") then
+        speaker.Character:FindFirstChild("HumanoidRootPart").CFrame = speaker.Character:FindFirstChild("HumanoidRootPart").CFrame + Vector3.new(0, 5, 0)
+    end
+end)
+
+down.MouseButton1Click:Connect(function()
+    if speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart") then
+        speaker.Character:FindFirstChild("HumanoidRootPart").CFrame = speaker.Character:FindFirstChild("HumanoidRootPart").CFrame + Vector3.new(0, -5, 0)
+    end
+end)
+
+-- Speed control
+plus.MouseButton1Click:Connect(function()
+    speeds = speeds + 1
+    speed.Text = tostring(speeds)
+end)
+
+mine.MouseButton1Click:Connect(function()
+    speeds = math.max(1, speeds - 1)
+    speed.Text = tostring(speeds)
+end)
+
+-- Close & Minimize
+closebutton.MouseButton1Click:Connect(function()
+    main:Destroy()
+end)
+
+mini.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+    mini2.Visible = true
+end)
+
+mini2.MouseButton1Click:Connect(function()
+    Frame.Visible = true
+    mini2.Visible = false
+end)
 
 -- Toggle Noclip
 noclipBtn.MouseButton1Click:Connect(function()
@@ -165,8 +228,8 @@ noclipBtn.MouseButton1Click:Connect(function()
         noclipBtn.Text = "Noclip: ON"
         noclipBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         RunService.Stepped:Connect(function()
-            if noclipEnabled and game.Players.LocalPlayer.Character then
-                for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if noclipEnabled and speaker.Character then
+                for _, v in pairs(speaker.Character:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = false
                     end
@@ -205,6 +268,3 @@ gfxBtn.MouseButton1Click:Connect(function()
         gfxBtn.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
     end
 end)
-
--- Sisanya masih fly script lama dari file kamu (TranslateBy, tombol UP/DOWN, +, -, dll)
--- Tidak diubah biar sesuai permintaan
