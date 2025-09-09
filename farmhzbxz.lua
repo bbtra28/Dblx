@@ -1,5 +1,4 @@
--- Fly + Noclip GUI (Mobile, Kamera Naik/Turun, Draggable + Hide/Show)
-
+-- Fly + Noclip GUI (Mobile, Fix Naik Turun dengan Kamera)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
@@ -17,7 +16,6 @@ local bodyVel, bodyGyro
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "FlyNoclipGUI"
 
--- Main frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 160, 0, 100)
 frame.Position = UDim2.new(0.05, 0, 0.7, 0)
@@ -26,7 +24,6 @@ frame.Active = true
 frame.Draggable = true
 frame.Visible = true
 
--- Fly button
 local flyBtn = Instance.new("TextButton", frame)
 flyBtn.Size = UDim2.new(0.9, 0, 0.4, 0)
 flyBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -36,7 +33,6 @@ flyBtn.TextColor3 = Color3.new(1, 1, 1)
 flyBtn.Font = Enum.Font.SourceSansBold
 flyBtn.TextSize = 20
 
--- Noclip button
 local noclipBtn = Instance.new("TextButton", frame)
 noclipBtn.Size = UDim2.new(0.9, 0, 0.4, 0)
 noclipBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
@@ -46,7 +42,6 @@ noclipBtn.TextColor3 = Color3.new(1, 1, 1)
 noclipBtn.Font = Enum.Font.SourceSansBold
 noclipBtn.TextSize = 20
 
--- Show/Hide button
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 80, 0, 30)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.62, 0)
@@ -73,9 +68,12 @@ local function startFly()
             local moveDir = humanoid.MoveDirection
 
             if moveDir.Magnitude > 0 then
-                -- Kamera menentukan naik/turun
-                local move = (cam.CFrame.LookVector * moveDir.Z) + (cam.CFrame.RightVector * moveDir.X)
-                bodyVel.Velocity = move * speed
+                -- Gerakan maju mundur ikut kamera (termasuk naik/turun)
+                local forward = cam.CFrame.LookVector * moveDir.Z
+                local right = cam.CFrame.RightVector * moveDir.X
+                local move = (forward + right) * speed
+
+                bodyVel.Velocity = move
             else
                 bodyVel.Velocity = Vector3.zero
             end
@@ -121,7 +119,7 @@ noclipBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Button
+-- Hide/Show Button
 toggleBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
     toggleBtn.Text = frame.Visible and "Hide GUI" or "Show GUI"
