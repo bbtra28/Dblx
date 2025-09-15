@@ -1,10 +1,8 @@
--- Roblox Lua: Low graphics / disable effects + draggable GUI showing FPS & Ping -- Versi Executor (langsung inject, tanpa perlu StarterPlayerScripts)
+-- Roblox Lua: Low graphics / disable effects + draggable GUI showing FPS & Ping -- Versi Executor (pakai CoreGui, supaya lebih pasti muncul)
 
-local Players = game:GetService("Players") local RunService = game:GetService("RunService") local UserInputService = game:GetService("UserInputService") local Lighting = game:GetService("Lighting") local Workspace = game:GetService("Workspace") local LocalPlayer = Players.LocalPlayer
+local Players = game:GetService("Players") local RunService = game:GetService("RunService") local UserInputService = game:GetService("UserInputService") local Lighting = game:GetService("Lighting") local Workspace = game:GetService("Workspace") local CoreGui = game:GetService("CoreGui") local LocalPlayer = Players.LocalPlayer
 
--- CONFIG local UPDATE_INTERVAL = 0.2 -- detik update UI
-
-local saved = { lighting = {}, postEffects = {}, particleStates = {}, } local effectsDisabled = false
+local UPDATE_INTERVAL = 0.2 local saved = {lighting = {}, postEffects = {}, particleStates = {}} local effectsDisabled = false
 
 local function safeSet(obj, prop, val) if obj and obj[prop] ~= nil then pcall(function() obj[prop] = val end) end end
 
@@ -16,19 +14,7 @@ local function disableParticlesAndMisc() for _, obj in pairs(Workspace:GetDescen
 
 local function restoreParticlesAndMisc() for obj, state in pairs(saved.particleStates) do if obj and obj.Parent then safeSet(obj, "Enabled", state) end end saved.particleStates = {} end
 
-local function applyLowLighting() local props = {"GlobalShadows", "Brightness", "OutdoorAmbient", "ClockTime", "FogEnd", "EnvironmentDiffuseScale", "EnvironmentSpecularScale"} for _, p in ipairs(props) do saved.lighting[p] = Lighting[p] end
-
-safeSet(Lighting, "GlobalShadows", false)
-safeSet(Lighting, "Brightness", 1)
-safeSet(Lighting, "OutdoorAmbient", Color3.fromRGB(127,127,127))
-safeSet(Lighting, "ClockTime", 12)
-safeSet(Lighting, "FogEnd", 100000)
-safeSet(Lighting, "EnvironmentDiffuseScale", 0)
-safeSet(Lighting, "EnvironmentSpecularScale", 0)
-
-pcall(function() settings().Rendering.QualityLevel = 1 end)
-
-end
+local function applyLowLighting() local props = {"GlobalShadows", "Brightness", "OutdoorAmbient", "ClockTime", "FogEnd", "EnvironmentDiffuseScale", "EnvironmentSpecularScale"} for _, p in ipairs(props) do saved.lighting[p] = Lighting[p] end safeSet(Lighting, "GlobalShadows", false) safeSet(Lighting, "Brightness", 1) safeSet(Lighting, "OutdoorAmbient", Color3.fromRGB(127,127,127)) safeSet(Lighting, "ClockTime", 12) safeSet(Lighting, "FogEnd", 100000) safeSet(Lighting, "EnvironmentDiffuseScale", 0) safeSet(Lighting, "EnvironmentSpecularScale", 0) pcall(function() settings().Rendering.QualityLevel = 1 end) end
 
 local function restoreLighting() for p, v in pairs(saved.lighting) do safeSet(Lighting, p, v) end saved.lighting = {} pcall(function() settings().Rendering.QualityLevel = 14 end) end
 
@@ -38,12 +24,7 @@ local function disableLowGraphics() if not effectsDisabled then return end resto
 
 local function getPing() local ok, result = pcall(function() local Stats = game:GetService("Stats") if Stats and Stats:FindFirstChild("Network") then local net = Stats.Network local pingObj = net:FindFirstChild("Data Ping") or net:FindFirstChild("DataPing") or net:FindFirstChild("Ping") if pingObj then if typeof(pingObj.Value) == "number" then return math.floor(pingObj.Value) end if pingObj.GetValueString then local s = pingObj:GetValueString() local n = tonumber(s:match("%d+")) if n then return n end end end end if LocalPlayer and LocalPlayer.GetNetworkPing then return math.floor(LocalPlayer:GetNetworkPing()*1000) end end) if ok and result then return result end return 0 end
 
--- GUI local function createGui() local pg = LocalPlayer:WaitForChild("PlayerGui", 10) if not pg then return end
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "LowGraphicsGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = pg
+local function createGui() local screenGui = Instance.new("ScreenGui") screenGui.Name = "LowGraphicsCoreGUI" screenGui.ResetOnSpawn = false screenGui.Parent = CoreGui
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 200, 0, 90)
@@ -119,7 +100,6 @@ UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then updateInput(input) end
 end)
 
--- Toggle logic
 toggleBtn.MouseButton1Click:Connect(function()
     if effectsDisabled then
         disableLowGraphics()
@@ -130,7 +110,6 @@ toggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- FPS & Ping update loop
 local frames = 0
 RunService.RenderStepped:Connect(function() frames = frames + 1 end)
 task.spawn(function()
@@ -145,7 +124,5 @@ end)
 
 end
 
--- Jalankan GUI createGui()
-
-print("Low Graphics + FPS/Ping GUI Loaded (Executor Mode)")
+createGui() print("Low Graphics + FPS/Ping GUI Loaded (CoreGui Mode)")
 
