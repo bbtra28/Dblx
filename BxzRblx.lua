@@ -4,11 +4,13 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Gunakan global environment agar tidak hilang saat respawn
+-- Gunakan global environment agar slot tidak hilang saat respawn
 getgenv().savedPositions = getgenv().savedPositions or {}
 
--- GUI
+-- GUI utama
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SaveTP_GUI"
+ScreenGui.ResetOnSpawn = false -- supaya GUI tidak hilang saat respawn
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Frame utama
@@ -37,7 +39,7 @@ HideButton.Text = "Hide"
 HideButton.TextColor3 = Color3.new(1, 1, 1)
 HideButton.Parent = MainFrame
 
--- Tombol Show (draggable juga)
+-- Tombol Show
 local ShowButton = Instance.new("TextButton")
 ShowButton.Size = UDim2.new(0, 80, 0, 30)
 ShowButton.Position = UDim2.new(0, 20, 0, 100)
@@ -81,24 +83,24 @@ for i = 1, 10 do
     createButton("Save " .. i, 10, yPos, Color3.fromRGB(50, 200, 50), function()
         local root = getRoot()
         getgenv().savedPositions[i] = root.CFrame
-        print("Saved slot " .. i)
+        warn("Saved slot " .. i)
     end)
 
     createButton("TP " .. i, 120, yPos, Color3.fromRGB(50, 50, 200), function()
         local root = getRoot()
         if getgenv().savedPositions[i] then
             root.CFrame = getgenv().savedPositions[i]
-            print("Teleported to slot " .. i)
+            warn("Teleported to slot " .. i)
         end
     end)
 
     createButton("Clear " .. i, 230, yPos, Color3.fromRGB(200, 50, 50), function()
         getgenv().savedPositions[i] = nil
-        print("Cleared slot " .. i)
+        warn("Cleared slot " .. i)
     end)
 end
 
--- Logic hide/show
+-- Logic Hide / Show
 HideButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     ShowButton.Visible = true
