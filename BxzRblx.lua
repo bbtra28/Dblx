@@ -1,16 +1,17 @@
--- Save & Teleport Multi Slot (1-10) + Clear + Persist After Respawn
--- Data save pakai getgenv() biar tidak hilang saat respawn
+-- Save & Teleport Multi Slot (1-10) + Clear + Hide/Show + Persist After Respawn
+-- Data save pakai getgenv() biar tetap ada saat respawn
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Gunakan global environment agar tidak reset saat respawn
+-- Gunakan global environment agar tidak hilang saat respawn
 getgenv().savedPositions = getgenv().savedPositions or {}
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
+-- Frame utama
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 360, 0, 480)
 MainFrame.Position = UDim2.new(0, 20, 0, 100)
@@ -19,12 +20,34 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
+-- Judul
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.Text = "Save & Teleport (1-10)"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Parent = MainFrame
+
+-- Tombol Hide
+local HideButton = Instance.new("TextButton")
+HideButton.Size = UDim2.new(0, 100, 0, 30)
+HideButton.Position = UDim2.new(1, -110, 0, 0)
+HideButton.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
+HideButton.Text = "Hide"
+HideButton.TextColor3 = Color3.new(1, 1, 1)
+HideButton.Parent = MainFrame
+
+-- Tombol Show (draggable juga)
+local ShowButton = Instance.new("TextButton")
+ShowButton.Size = UDim2.new(0, 80, 0, 30)
+ShowButton.Position = UDim2.new(0, 20, 0, 100)
+ShowButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+ShowButton.Text = "Show"
+ShowButton.TextColor3 = Color3.new(1, 1, 1)
+ShowButton.Visible = false
+ShowButton.Active = true
+ShowButton.Draggable = true
+ShowButton.Parent = ScreenGui
 
 -- Fungsi ambil root aman
 local function getRoot()
@@ -38,7 +61,7 @@ local function getRoot()
     return root
 end
 
--- Fungsi tombol
+-- Fungsi buat tombol
 local function createButton(text, posX, posY, color, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 100, 0, 30)
@@ -74,3 +97,14 @@ for i = 1, 10 do
         print("Cleared slot " .. i)
     end)
 end
+
+-- Logic hide/show
+HideButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    ShowButton.Visible = true
+end)
+
+ShowButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    ShowButton.Visible = false
+end)
