@@ -1,10 +1,10 @@
--- Save & Teleport Multi Slot (1-10) + Clear + Draggable + Hide/Show minimal + Draggable Show
+-- Save & Teleport Multi Slot (1-10) + Clear + Draggable + Hide/Show minimal + Draggable Show + Persist After Respawn
 -- Bisa dijalankan di executor atau LocalScript
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Simpan posisi
+-- Simpan posisi (persist setelah respawn)
 local savedPositions = {}
 
 -- GUI
@@ -49,6 +49,18 @@ ShowButton.Active = true
 ShowButton.Draggable = true
 ShowButton.Parent = ScreenGui
 
+-- Fungsi untuk ambil root part dengan aman (tunggu kalau respawn)
+local function getRoot()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    while not root do
+        char = player.Character or player.CharacterAdded:Wait()
+        root = char:FindFirstChild("HumanoidRootPart")
+        task.wait()
+    end
+    return root
+end
+
 -- Fungsi buat tombol
 local function createButton(text, posX, posY, color, callback)
     local btn = Instance.new("TextButton")
@@ -67,8 +79,7 @@ for i = 1, 10 do
     local yPos = 40 + ((i - 1) * 40)
 
     createButton("Save " .. i, 10, yPos, Color3.fromRGB(50, 200, 50), function()
-        local char = player.Character or player.CharacterAdded:Wait()
-        local root = char:FindFirstChild("HumanoidRootPart")
+        local root = getRoot()
         if root then
             savedPositions[i] = root.CFrame
             print("Saved slot " .. i)
@@ -76,8 +87,7 @@ for i = 1, 10 do
     end)
 
     createButton("TP " .. i, 120, yPos, Color3.fromRGB(50, 50, 200), function()
-        local char = player.Character or player.CharacterAdded:Wait()
-        local root = char:FindFirstChild("HumanoidRootPart")
+        local root = getRoot()
         if root and savedPositions[i] then
             root.CFrame = savedPositions[i]
             print("Teleported to slot " .. i)
