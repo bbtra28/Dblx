@@ -1,11 +1,11 @@
--- Save & Teleport Multi Slot (1-10) + Clear + Hide/Show + Marker Part + Nomor Slot
--- GUI ukuran kecil + tanda bayangan + angka slot di atas marker
+-- Save & Teleport Multi Slot (1-10) + Clear + Hide/Show + Marker Sphere + Nomor Angka
+-- GUI ukuran kecil + tanda bayangan berbentuk bola + angka slot di atas marker
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
--- Gunakan global environment agar tetap ada saat respawn
+-- Global biar tetap ada walau respawn
 getgenv().savedPositions = getgenv().savedPositions or {}
 getgenv().savedMarkers = getgenv().savedMarkers or {}
 
@@ -15,7 +15,7 @@ ScreenGui.Name = "SaveTP_GUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama (kecil)
+-- Frame utama
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 250, 0, 360)
 MainFrame.Position = UDim2.new(0, 20, 0, 100)
@@ -68,42 +68,43 @@ local function getRoot()
     return root
 end
 
--- Buat marker part
+-- Buat marker sphere
 local function createMarker(cf, slot)
-    -- Hapus marker lama dulu
+    -- Hapus marker lama
     if getgenv().savedMarkers[slot] then
         getgenv().savedMarkers[slot]:Destroy()
         getgenv().savedMarkers[slot] = nil
     end
 
-    local part = Instance.new("Part")
-    part.Size = Vector3.new(4, 1, 4)
-    part.Anchored = true
-    part.CanCollide = false
-    part.CFrame = cf
-    part.Color = Color3.fromRGB(0, 255, 100)
-    part.Transparency = 0.5
-    part.Name = "SavedMarker_" .. slot
-    part.Parent = Workspace
+    local sphere = Instance.new("Part")
+    sphere.Shape = Enum.PartType.Ball
+    sphere.Size = Vector3.new(2, 2, 2)
+    sphere.Anchored = true
+    sphere.CanCollide = false
+    sphere.CFrame = cf
+    sphere.Color = Color3.fromRGB(0, 255, 100)
+    sphere.Transparency = 0.4
+    sphere.Name = "SavedMarker_" .. slot
+    sphere.Parent = Workspace
 
-    -- Tambahin BillboardGui buat nomor slot
+    -- Billboard angka slot
     local billboard = Instance.new("BillboardGui")
-    billboard.Adornee = part
+    billboard.Adornee = sphere
     billboard.Size = UDim2.new(0, 100, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.AlwaysOnTop = true
-    billboard.Parent = part
+    billboard.Parent = sphere
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.Text = "Slot " .. slot
+    label.Text = tostring(slot) -- hanya angka
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.TextStrokeTransparency = 0
     label.TextScaled = true
     label.Parent = billboard
 
-    getgenv().savedMarkers[slot] = part
+    getgenv().savedMarkers[slot] = sphere
 end
 
 -- Fungsi buat tombol
@@ -120,7 +121,7 @@ local function createButton(text, posX, posY, color, callback)
     return btn
 end
 
--- Buat tombol Save / TP / Clear
+-- Tombol Save / TP / Clear
 for i = 1, 10 do
     local yPos = 30 + ((i - 1) * 30)
 
@@ -129,14 +130,12 @@ for i = 1, 10 do
         local cf = root.CFrame
         getgenv().savedPositions[i] = cf
         createMarker(cf, i)
-        warn("Saved slot " .. i)
     end)
 
     createButton("TP" .. i, 90, yPos, Color3.fromRGB(50, 50, 200), function()
         local root = getRoot()
         if getgenv().savedPositions[i] then
             root.CFrame = getgenv().savedPositions[i]
-            warn("Teleported to slot " .. i)
         end
     end)
 
@@ -146,7 +145,6 @@ for i = 1, 10 do
             getgenv().savedMarkers[i]:Destroy()
             getgenv().savedMarkers[i] = nil
         end
-        warn("Cleared slot " .. i)
     end)
 end
 
