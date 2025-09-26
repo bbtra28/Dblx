@@ -55,6 +55,30 @@ greenButton.Parent = frame
 local wallhackEnabled = false
 local currentColor = Color3.fromRGB(0, 255, 0) -- default hijau
 
+-- Fungsi username tag
+local function addNameTag(player)
+    if player == LocalPlayer then return end
+    if player.Character and player.Character:FindFirstChild("Head") then
+        if not player.Character.Head:FindFirstChild("NameTag") then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "NameTag"
+            billboard.Size = UDim2.new(0, 100, 0, 20)
+            billboard.StudsOffset = Vector3.new(0, 2.5, 0) -- posisi di atas kepala
+            billboard.AlwaysOnTop = true
+            billboard.Parent = player.Character.Head
+
+            local text = Instance.new("TextLabel")
+            text.Size = UDim2.new(1, 0, 1, 0)
+            text.BackgroundTransparency = 1
+            text.Text = player.Name
+            text.TextColor3 = Color3.new(1, 1, 1)
+            text.Font = Enum.Font.SourceSansBold
+            text.TextSize = 14
+            text.Parent = billboard
+        end
+    end
+end
+
 -- Fungsi highlight
 local function setWallhack(player, enabled)
     if player == LocalPlayer then return end
@@ -71,9 +95,14 @@ local function setWallhack(player, enabled)
             else
                 existing.FillColor = currentColor
             end
+            addNameTag(player) -- tambahin username kalau aktif
         else
             if existing then
                 existing:Destroy()
+            end
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local tag = player.Character.Head:FindFirstChild("NameTag")
+                if tag then tag:Destroy() end
             end
         end
     end
