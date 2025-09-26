@@ -7,9 +7,9 @@ gui.Name = "WallhackGUI"
 gui.ResetOnSpawn = false
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Buat Frame
+-- Frame utama
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 140)
+frame.Size = UDim2.new(0, 220, 0, 180)
 frame.Position = UDim2.new(0, 50, 0, 150)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.2
@@ -17,6 +17,29 @@ frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
+
+-- Tombol Show (selalu ada)
+local showButton = Instance.new("TextButton")
+showButton.Size = UDim2.new(0, 50, 0, 25)
+showButton.Position = UDim2.new(0, 10, 0, 100) -- bisa dipindah
+showButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+showButton.TextColor3 = Color3.new(1, 1, 1)
+showButton.Text = "Show"
+showButton.Font = Enum.Font.SourceSansBold
+showButton.TextSize = 14
+showButton.Visible = false -- default hidden, karena GUI awalnya tampil
+showButton.Parent = gui
+
+-- Tombol Hide di frame
+local hideButton = Instance.new("TextButton")
+hideButton.Size = UDim2.new(0, 40, 0, 20)
+hideButton.Position = UDim2.new(1, -45, 0, 5)
+hideButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+hideButton.TextColor3 = Color3.new(1, 1, 1)
+hideButton.Text = "-"
+hideButton.Font = Enum.Font.SourceSansBold
+hideButton.TextSize = 14
+hideButton.Parent = frame
 
 -- Tombol Wallhack
 local wallhackButton = Instance.new("TextButton")
@@ -53,31 +76,7 @@ greenButton.Parent = frame
 
 -- Variabel Toggle
 local wallhackEnabled = false
-local currentColor = Color3.fromRGB(0, 255, 0) -- default hijau
-
--- Fungsi username tag
-local function addNameTag(player)
-    if player == LocalPlayer then return end
-    if player.Character and player.Character:FindFirstChild("Head") then
-        if not player.Character.Head:FindFirstChild("NameTag") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "NameTag"
-            billboard.Size = UDim2.new(0, 100, 0, 20)
-            billboard.StudsOffset = Vector3.new(0, 2.5, 0) -- posisi di atas kepala
-            billboard.AlwaysOnTop = true
-            billboard.Parent = player.Character.Head
-
-            local text = Instance.new("TextLabel")
-            text.Size = UDim2.new(1, 0, 1, 0)
-            text.BackgroundTransparency = 1
-            text.Text = player.Name
-            text.TextColor3 = Color3.new(1, 1, 1)
-            text.Font = Enum.Font.SourceSansBold
-            text.TextSize = 14
-            text.Parent = billboard
-        end
-    end
-end
+local currentColor = Color3.fromRGB(0, 255, 0)
 
 -- Fungsi highlight
 local function setWallhack(player, enabled)
@@ -95,27 +94,20 @@ local function setWallhack(player, enabled)
             else
                 existing.FillColor = currentColor
             end
-            addNameTag(player) -- tambahin username kalau aktif
         else
             if existing then
                 existing:Destroy()
-            end
-            if player.Character and player.Character:FindFirstChild("Head") then
-                local tag = player.Character.Head:FindFirstChild("NameTag")
-                if tag then tag:Destroy() end
             end
         end
     end
 end
 
--- Update semua pemain
 local function toggleWallhack(enabled)
     for _, p in ipairs(Players:GetPlayers()) do
         setWallhack(p, enabled)
     end
 end
 
--- Update saat ada player baru
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function()
         if wallhackEnabled then
@@ -146,4 +138,15 @@ greenButton.MouseButton1Click:Connect(function()
     if wallhackEnabled then
         toggleWallhack(true)
     end
+end)
+
+-- Hide / Show GUI
+hideButton.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    showButton.Visible = true
+end)
+
+showButton.MouseButton1Click:Connect(function()
+    frame.Visible = true
+    showButton.Visible = false
 end)
