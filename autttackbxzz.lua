@@ -1,23 +1,17 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Buat GUI utama
+-- Hapus GUI lama kalau ada
+if PlayerGui:FindFirstChild("HiddenToolsFinder") then
+    PlayerGui.HiddenToolsFinder:Destroy()
+end
+
+-- Buat GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "HiddenToolsFinder"
 gui.ResetOnSpawn = false
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
--- Frame utama
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,300,0,400)
-frame.Position = UDim2.new(0,50,0,100)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-frame.Active = true
-frame.Draggable = true -- biar bisa dipindah
-
-local list = Instance.new("UIListLayout", frame)
-list.SortOrder = Enum.SortOrder.LayoutOrder
+gui.Parent = PlayerGui
 
 -- Tombol show/hide
 local toggleBtn = Instance.new("TextButton", gui)
@@ -27,6 +21,18 @@ toggleBtn.Text = "Hide"
 toggleBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
 toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
+-- Frame utama
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,300,0,400)
+frame.Position = UDim2.new(0,50,0,110)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Active = true
+frame.Draggable = true
+
+local list = Instance.new("UIListLayout", frame)
+list.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Show/hide
 local visible = true
 toggleBtn.MouseButton1Click:Connect(function()
     visible = not visible
@@ -37,9 +43,7 @@ end)
 -- Fungsi scan tool
 local function scan()
     for _,child in ipairs(frame:GetChildren()) do
-        if child:IsA("TextButton") and child ~= toggleBtn then
-            child:Destroy()
-        end
+        if child:IsA("TextButton") then child:Destroy() end
     end
     
     local function addTool(obj, lokasi)
@@ -78,8 +82,10 @@ local function scan()
     end
 end
 
--- Scan awal + refresh otomatis
+-- Scan awal
 scan()
+
+-- Auto refresh
 game.Workspace.DescendantAdded:Connect(scan)
 game.ReplicatedStorage.DescendantAdded:Connect(scan)
 game.Lighting.DescendantAdded:Connect(scan)
