@@ -1,19 +1,20 @@
--- 🟢 Services
+-- ⚡ Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- 🟢 Status
+-- ⚡ Status
 local AutoFarm = false
 local AutoOpen = false
+local FarmConnection, OpenConnection
 
--- 🟢 Fungsi cari zombie terdekat
+-- ⚡ Cari zombie terdekat
 local function GetNearestZombie()
     local char = LocalPlayer.Character
     if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
-
     local nearest, dist = nil, math.huge
     for _, mob in ipairs(Workspace:GetChildren()) do
         if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
@@ -27,21 +28,19 @@ local function GetNearestZombie()
     return nearest
 end
 
--- 🟢 AutoFarm cepat
+-- ⚡ AutoFarm cepat
 local function StartAutoFarm()
     AutoFarm = true
-    task.spawn(function()
-        while AutoFarm do
-            task.wait(0.15)
-            local target = GetNearestZombie()
-            local char = LocalPlayer.Character
-            if target and char and char:FindFirstChild("HumanoidRootPart") then
-                -- Posisikan sedikit di belakang zombie agar tidak nabrak
-                char.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, -2.5)
-                -- Klik lebih sering untuk DPS lebih tinggi
-                for i = 1, 3 do
-                    VirtualUser:ClickButton1(Vector2.new())
-                end
+    if FarmConnection then FarmConnection:Disconnect() end
+    FarmConnection = RunService.Heartbeat:Connect(function()
+        if not AutoFarm then return end
+        local char = LocalPlayer.Character
+        if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
+        local target = GetNearestZombie()
+        if target then
+            char.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, -2)
+            for i = 1, 5 do
+                VirtualUser:ClickButton1(Vector2.new())
             end
         end
     end)
@@ -49,17 +48,27 @@ end
 
 local function StopAutoFarm()
     AutoFarm = false
+    if FarmConnection then FarmConnection:Disconnect() end
 end
 
--- 🟢 AutoOpen pintu cepat
+-- ⚡ AutoOpen pakai teleport
 local function StartAutoOpen()
     AutoOpen = true
     task.spawn(function()
         while AutoOpen do
             task.wait(0.2)
+            local char = LocalPlayer.Character
+            if not (char and char:FindFirstChild("HumanoidRootPart")) then continue end
             for _, prompt in ipairs(Workspace:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") then
-                    fireproximityprompt(prompt)
+                if not AutoOpen then break end
+                if prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Enabled then
+                    local root = char.HumanoidRootPart
+                    local targetPos = prompt.Parent:IsA("BasePart") and prompt.Parent.Position or prompt.Parent:FindFirstChildWhichIsA("BasePart") and prompt.Parent:FindFirstChildWhichIsA("BasePart").Position
+                    if targetPos then
+                        root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+                        task.wait(0.05)
+                        fireproximityprompt(prompt)
+                    end
                 end
             end
         end
@@ -70,9 +79,9 @@ local function StopAutoOpen()
     AutoOpen = false
 end
 
--- 🟢 GUI
+-- ⚡ GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "HuntyZombieUI"
+gui.Name = "HuntyZombieV4"
 gui.ResetOnSpawn = false
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -83,13 +92,12 @@ frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
-
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
-title.Text = "⚡ HuntyZombie v3 Fast"
+title.Text = "🌀 HuntyZombie v4"
 title.Font = Enum.Font.GothamBold
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 16
@@ -118,7 +126,7 @@ end)
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(1, -20, 0, 35)
 openBtn.Position = UDim2.new(0, 10, 0, 85)
-openBtn.Text = "AutoOpen Door: OFF"
+openBtn.Text = "Teleport Open Doors: OFF"
 openBtn.Font = Enum.Font.Gotham
 openBtn.TextSize = 14
 openBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -128,12 +136,12 @@ Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0, 8)
 
 openBtn.MouseButton1Click:Connect(function()
     AutoOpen = not AutoOpen
-    openBtn.Text = AutoOpen and "AutoOpen Door: ON" or "AutoOpen Door: OFF"
+    openBtn.Text = AutoOpen and "Teleport Open Doors: ON" or "Teleport Open Doors: OFF"
     openBtn.BackgroundColor3 = AutoOpen and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
     if AutoOpen then StartAutoOpen() else StopAutoOpen() end
 end)
 
--- Tombol Hide/Show
+-- Tombol Hide / Show
 local hideBtn = Instance.new("TextButton")
 hideBtn.Size = UDim2.new(0, 80, 0, 30)
 hideBtn.Position = UDim2.new(0.5, -40, 1, 10)
