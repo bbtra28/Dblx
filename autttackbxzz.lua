@@ -2,169 +2,169 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
-local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- 🟢 Variabel status
+-- 🟢 Status
 local AutoFarm = false
 local AutoOpen = false
 
--- 🟢 Fungsi AutoFarm
-function StartAutoFarm()
+-- 🟢 Fungsi cari zombie terdekat
+local function GetNearestZombie()
+    local char = LocalPlayer.Character
+    if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
+
+    local nearest, dist = nil, math.huge
+    for _, mob in ipairs(Workspace:GetChildren()) do
+        if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+            local d = (char.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).Magnitude
+            if d < dist then
+                dist = d
+                nearest = mob
+            end
+        end
+    end
+    return nearest
+end
+
+-- 🟢 AutoFarm cepat
+local function StartAutoFarm()
     AutoFarm = true
     task.spawn(function()
         while AutoFarm do
-            task.wait(0.5)
-            for _, mob in pairs(Workspace:GetChildren()) do
-                if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-                        VirtualUser:ClickButton1(Vector2.new())
-                    end
+            task.wait(0.15)
+            local target = GetNearestZombie()
+            local char = LocalPlayer.Character
+            if target and char and char:FindFirstChild("HumanoidRootPart") then
+                -- Posisikan sedikit di belakang zombie agar tidak nabrak
+                char.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, -2.5)
+                -- Klik lebih sering untuk DPS lebih tinggi
+                for i = 1, 3 do
+                    VirtualUser:ClickButton1(Vector2.new())
                 end
             end
         end
     end)
 end
 
-function StopAutoFarm()
+local function StopAutoFarm()
     AutoFarm = false
 end
 
--- 🟢 Fungsi AutoOpen
-function StartAutoOpen()
+-- 🟢 AutoOpen pintu cepat
+local function StartAutoOpen()
     AutoOpen = true
     task.spawn(function()
         while AutoOpen do
-            task.wait(1)
-            for _, door in pairs(Workspace:GetDescendants()) do
-                if door:IsA("ProximityPrompt") then
-                    fireproximityprompt(door)
+            task.wait(0.2)
+            for _, prompt in ipairs(Workspace:GetDescendants()) do
+                if prompt:IsA("ProximityPrompt") then
+                    fireproximityprompt(prompt)
                 end
             end
         end
     end)
 end
 
-function StopAutoOpen()
+local function StopAutoOpen()
     AutoOpen = false
 end
 
--- 🟢 GUI Setup
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AutoFarmGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- 🟢 GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "HuntyZombieUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- 🟢 Frame utama
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 150)
-Frame.Position = UDim2.new(0.5, -110, 0.5, -75)
-Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Frame.BorderSizePixel = 0
-Frame.Visible = true
-Frame.Active = true
-Frame.Draggable = true
-Frame.Parent = ScreenGui
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 150)
+frame.Position = UDim2.new(0.5, -110, 0.5, -75)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
--- 🟢 Ujung bulat & bayangan
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = Frame
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
--- 🟢 Judul
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundTransparency = 1
-Title.Text = "🧟 HuntyZombie GUI"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.Parent = Frame
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "⚡ HuntyZombie v3 Fast"
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 16
+title.Parent = frame
 
--- 🟢 Tombol AutoFarm
-local BtnAutoFarm = Instance.new("TextButton")
-BtnAutoFarm.Size = UDim2.new(1, -20, 0, 35)
-BtnAutoFarm.Position = UDim2.new(0, 10, 0, 40)
-BtnAutoFarm.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-BtnAutoFarm.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnAutoFarm.Text = "AutoFarm: OFF"
-BtnAutoFarm.Font = Enum.Font.Gotham
-BtnAutoFarm.TextSize = 14
-BtnAutoFarm.Parent = Frame
+-- Tombol AutoFarm
+local farmBtn = Instance.new("TextButton")
+farmBtn.Size = UDim2.new(1, -20, 0, 35)
+farmBtn.Position = UDim2.new(0, 10, 0, 40)
+farmBtn.Text = "AutoFarm: OFF"
+farmBtn.Font = Enum.Font.Gotham
+farmBtn.TextSize = 14
+farmBtn.TextColor3 = Color3.new(1, 1, 1)
+farmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+farmBtn.Parent = frame
+Instance.new("UICorner", farmBtn).CornerRadius = UDim.new(0, 8)
 
-local BtnFarmCorner = Instance.new("UICorner", BtnAutoFarm)
-BtnFarmCorner.CornerRadius = UDim.new(0, 8)
-
-BtnAutoFarm.MouseButton1Click:Connect(function()
+farmBtn.MouseButton1Click:Connect(function()
     AutoFarm = not AutoFarm
-    BtnAutoFarm.Text = AutoFarm and "AutoFarm: ON" or "AutoFarm: OFF"
-    BtnAutoFarm.BackgroundColor3 = AutoFarm and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
+    farmBtn.Text = AutoFarm and "AutoFarm: ON" or "AutoFarm: OFF"
+    farmBtn.BackgroundColor3 = AutoFarm and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
     if AutoFarm then StartAutoFarm() else StopAutoFarm() end
 end)
 
--- 🟢 Tombol AutoOpen
-local BtnAutoOpen = Instance.new("TextButton")
-BtnAutoOpen.Size = UDim2.new(1, -20, 0, 35)
-BtnAutoOpen.Position = UDim2.new(0, 10, 0, 85)
-BtnAutoOpen.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-BtnAutoOpen.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnAutoOpen.Text = "AutoOpen Door: OFF"
-BtnAutoOpen.Font = Enum.Font.Gotham
-BtnAutoOpen.TextSize = 14
-BtnAutoOpen.Parent = Frame
+-- Tombol AutoOpen
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(1, -20, 0, 35)
+openBtn.Position = UDim2.new(0, 10, 0, 85)
+openBtn.Text = "AutoOpen Door: OFF"
+openBtn.Font = Enum.Font.Gotham
+openBtn.TextSize = 14
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+openBtn.Parent = frame
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0, 8)
 
-local BtnOpenCorner = Instance.new("UICorner", BtnAutoOpen)
-BtnOpenCorner.CornerRadius = UDim.new(0, 8)
-
-BtnAutoOpen.MouseButton1Click:Connect(function()
+openBtn.MouseButton1Click:Connect(function()
     AutoOpen = not AutoOpen
-    BtnAutoOpen.Text = AutoOpen and "AutoOpen Door: ON" or "AutoOpen Door: OFF"
-    BtnAutoOpen.BackgroundColor3 = AutoOpen and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
+    openBtn.Text = AutoOpen and "AutoOpen Door: ON" or "AutoOpen Door: OFF"
+    openBtn.BackgroundColor3 = AutoOpen and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
     if AutoOpen then StartAutoOpen() else StopAutoOpen() end
 end)
 
--- 🟢 Tombol Hide / Show
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 80, 0, 30)
-ToggleButton.Position = UDim2.new(0.5, -40, 1, 10)
-ToggleButton.Text = "Hide"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.Gotham
-ToggleButton.TextSize = 14
-ToggleButton.Parent = Frame
+-- Tombol Hide/Show
+local hideBtn = Instance.new("TextButton")
+hideBtn.Size = UDim2.new(0, 80, 0, 30)
+hideBtn.Position = UDim2.new(0.5, -40, 1, 10)
+hideBtn.Text = "Hide"
+hideBtn.Font = Enum.Font.Gotham
+hideBtn.TextSize = 14
+hideBtn.TextColor3 = Color3.new(1, 1, 1)
+hideBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+hideBtn.Parent = frame
+Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(0, 8)
 
-local BtnCorner = Instance.new("UICorner", ToggleButton)
-BtnCorner.CornerRadius = UDim.new(0, 8)
-
-local Hidden = false
-ToggleButton.MouseButton1Click:Connect(function()
-    Hidden = not Hidden
-    Frame.Visible = not Hidden
-    if Hidden then
-        local ShowButton = Instance.new("TextButton")
-        ShowButton.Name = "ShowButton"
-        ShowButton.Size = UDim2.new(0, 80, 0, 30)
-        ShowButton.Position = UDim2.new(0, 20, 0.8, 0)
-        ShowButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        ShowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ShowButton.Text = "Show GUI"
-        ShowButton.Font = Enum.Font.Gotham
-        ShowButton.TextSize = 14
-        ShowButton.Active = true
-        ShowButton.Draggable = true
-        ShowButton.Parent = ScreenGui
-
-        local corner = Instance.new("UICorner", ShowButton)
-        corner.CornerRadius = UDim.new(0, 8)
-
-        ShowButton.MouseButton1Click:Connect(function()
-            Frame.Visible = true
-            Hidden = false
-            ShowButton:Destroy()
+local hidden = false
+hideBtn.MouseButton1Click:Connect(function()
+    hidden = not hidden
+    frame.Visible = not hidden
+    if hidden then
+        local showBtn = Instance.new("TextButton")
+        showBtn.Size = UDim2.new(0, 80, 0, 30)
+        showBtn.Position = UDim2.new(0, 20, 0.8, 0)
+        showBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        showBtn.Text = "Show GUI"
+        showBtn.TextColor3 = Color3.new(1, 1, 1)
+        showBtn.Font = Enum.Font.Gotham
+        showBtn.TextSize = 14
+        showBtn.Draggable = true
+        showBtn.Parent = gui
+        Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0, 8)
+        showBtn.MouseButton1Click:Connect(function()
+            frame.Visible = true
+            hidden = false
+            showBtn:Destroy()
         end)
     end
 end)
