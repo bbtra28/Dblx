@@ -1,199 +1,99 @@
--- HuntyZombie v4 (fix: reliable Show/Hide + teleport-open + fast autofarm)
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local VirtualUser = game:GetService("VirtualUser")
-local RunService = game:GetService("RunService")
+-- Low Graphics Toggle GUI (Executor Safe) with Hide Others + Draggable Show Button -- Paste ke executor dan jalankan. -- Fitur lengkap: -- • Toggle Low Graphics on/off -- • Hide Others (client-side visual hide for other players) with ON/OFF (instan) -- • FPS & Ping display -- • Minimize (–) and Close (X) -- • When minimized, a draggable small "Show GUI" button appears (position follows last mainFrame position)
+
+local Players = game:GetService("Players") local RunService = game:GetService("RunService") local Lighting = game:GetService("Lighting") local UserInputService = game:GetService("UserInputService")
+
+local Stats = nil pcall(function() Stats = game:GetService("Stats") end)
 
 local LocalPlayer = Players.LocalPlayer
 
--- Jika GUI versi lama masih ada, buang dulu
-if LocalPlayer:FindFirstChild("PlayerGui") then
-    local old = LocalPlayer.PlayerGui:FindFirstChild("HuntyZombieV4")
-    if old then old:Destroy() end
-end
+-- store original rendering values local original = { QualityLevel = nil, GlobalShadows = Lighting.GlobalShadows, Brightness = Lighting.Brightness, FogEnd = Lighting.FogEnd } pcall(function() original.QualityLevel = settings().Rendering.QualityLevel end)
 
--- Status
-local AutoFarm = false
-local AutoOpen = false
-local FarmConnection, OpenConnection
+local lowGraphicsEnabled = false local hideOthersEnabled = false
 
--- Cari zombie terdekat
-local function GetNearestZombie()
-    local char = LocalPlayer.Character
-    if not (char and char:FindFirstChild("HumanoidRootPart")) then return nil end
-    local nearest, dist = nil, math.huge
-    for _, mob in ipairs(Workspace:GetChildren()) do
-        if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-            local d = (char.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).Magnitude
-            if d < dist then
-                dist = d
-                nearest = mob
-            end
-        end
+-- For reverting hide modifications local hiddenPlayersState = {}
+
+-- Utility: safe pcall wrapper local function safe(fn) local ok, res = pcall(fn) return ok, res end
+
+-- GUI main local screenGui = Instance.new("ScreenGui") screenGui.Name = "LowGraphicsGUI" screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame") mainFrame.Name = "Main" mainFrame.Size = UDim2.new(0, 220, 0, 120) mainFrame.Position = UDim2.new(0, 20, 0, 80) mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30) mainFrame.BorderSizePixel = 0 mainFrame.Parent = screenGui
+
+local title = Instance.new("TextLabel") title.Name = "Title" title.Size = UDim2.new(1, -60, 0, 28) title.BackgroundTransparency = 1 title.Text = "Low Graphics" title.Font = Enum.Font.SourceSansBold title.TextSize = 18 title.TextColor3 = Color3.fromRGB(255,255,255) title.TextXAlignment = Enum.TextXAlignment.Left title.Parent = mainFrame
+
+-- minimize button (–) local minimizeBtn = Instance.new("TextButton") minimizeBtn.Size = UDim2.new(0,28,0,24) minimizeBtn.Position = UDim2.new(1, -60, 0, 2) minimizeBtn.Text = "–" minimizeBtn.Font = Enum.Font.SourceSansBold minimizeBtn.TextSize = 18 minimizeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60) minimizeBtn.TextColor3 = Color3.fromRGB(255,255,255) minimizeBtn.BorderSizePixel = 0 minimizeBtn.Parent = mainFrame
+
+-- close button (X) local closeBtn = Instance.new("TextButton") closeBtn.Size = UDim2.new(0,28,0,24) closeBtn.Position = UDim2.new(1, -30, 0, 2) closeBtn.Text = "X" closeBtn.Font = Enum.Font.SourceSansBold closeBtn.TextSize = 18 closeBtn.BackgroundColor3 = Color3.fromRGB(120,40,40) closeBtn.TextColor3 = Color3.fromRGB(255,255,255) closeBtn.BorderSizePixel = 0 closeBtn.Parent = mainFrame
+
+-- Toggle Low Graphics button local toggleBtn = Instance.new("TextButton") toggleBtn.Size = UDim2.new(1, -20, 0, 34) toggleBtn.Position = UDim2.new(0, 10, 0, 34) toggleBtn.Text = "Turn Low ON" toggleBtn.Font = Enum.Font.SourceSans toggleBtn.TextSize = 16 toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) toggleBtn.TextColor3 = Color3.fromRGB(255,255,255) toggleBtn.BorderSizePixel = 0 toggleBtn.Parent = mainFrame
+
+-- Hide Others button (same style) local hideBtn = Instance.new("TextButton") hideBtn.Size = UDim2.new(1, -20, 0, 34) hideBtn.Position = UDim2.new(0, 10, 0, 74) hideBtn.Text = "Hide Others" hideBtn.Font = Enum.Font.SourceSans hideBtn.TextSize = 16 hideBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) hideBtn.TextColor3 = Color3.fromRGB(255,255,255) hideBtn.BorderSizePixel = 0 hideBtn.Parent = mainFrame
+
+-- FPS label (not visible when minimized) local fpsLabel = Instance.new("TextLabel") fpsLabel.Size = UDim2.new(1, -20, 0, 14) fpsLabel.Position = UDim2.new(0, 10, 1, -20) fpsLabel.BackgroundTransparency = 1 fpsLabel.Text = "FPS: -- | PING: --" fpsLabel.Font = Enum.Font.SourceSans fpsLabel.TextSize = 13 fpsLabel.TextColor3 = Color3.fromRGB(220,220,220) fpsLabel.TextXAlignment = Enum.TextXAlignment.Left fpsLabel.Parent = mainFrame
+
+-- Dragging logic for mainFrame local dragging, dragInput, dragStart, startPos
+
+title.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dragStart = input.Position startPos = mainFrame.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end) end end)
+
+title.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end end)
+
+UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then local delta = input.Position - dragStart mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
+
+-- Show button (small draggable) appears when main GUI minimized local showButton = Instance.new("TextButton") showButton.Name = "ShowButton" showButton.Size = UDim2.new(0, 100, 0, 30) showButton.BackgroundColor3 = Color3.fromRGB(60,60,60) showButton.TextColor3 = Color3.fromRGB(255,255,255) showButton.Text = "Show GUI" showButton.Font = Enum.Font.SourceSans showButton.TextSize = 16 showButton.Visible = false
+
+-- Draggable for showButton local sbDragging, sbDragInput, sbDragStart, sbStartPos showButton.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sbDragging = true sbDragStart = input.Position sbStartPos = showButton.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then sbDragging = false end end) end end) showButton.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then sbDragInput = input end end) UserInputService.InputChanged:Connect(function(input) if input == sbDragInput and sbDragging then local delta = input.Position - sbDragStart showButton.Position = UDim2.new(sbStartPos.X.Scale, sbStartPos.X.Offset + delta.X, sbStartPos.Y.Scale, sbStartPos.Y.Offset + delta.Y) end end)
+
+-- Minimize / Close behavior local hidden = false local function setHidden(h) hidden = h if hidden then -- hide all except title, minimize and close (title still visible area) for _, child in ipairs(mainFrame:GetChildren()) do if child ~= title and child ~= minimizeBtn and child ~= closeBtn then child.Visible = false end end mainFrame.Size = UDim2.new(0, 220, 0, 28) -- position showButton to match mainFrame position (so it feels natural) showButton.Position = UDim2.new(0, mainFrame.Position.X.Offset, 0, mainFrame.Position.Y.Offset) showButton.Visible = true -- parent showButton to the same parent if not showButton.Parent then showButton.Parent = screenGui end else for _, child in ipairs(mainFrame:GetChildren()) do child.Visible = true end mainFrame.Size = UDim2.new(0, 220, 0, 120) showButton.Visible = false end end
+
+minimizeBtn.MouseButton1Click:Connect(function() setHidden(not hidden) end) showButton.MouseButton1Click:Connect(function() setHidden(false) end)
+
+closeBtn.MouseButton1Click:Connect(function() pcall(function() screenGui:Destroy() end) end)
+
+-- Low graphics toggle implementation local prevValues = {} local function enableLowGraphics() if lowGraphicsEnabled then return end lowGraphicsEnabled = true pcall(function() prevValues.QualityLevel = settings().Rendering.QualityLevel end) prevValues.GlobalShadows = Lighting.GlobalShadows prevValues.Brightness = Lighting.Brightness prevValues.FogEnd = Lighting.FogEnd pcall(function() settings().Rendering.QualityLevel = 1 end) Lighting.GlobalShadows = false Lighting.Brightness = math.clamp(Lighting.Brightness * 0.9, 0, 10) Lighting.FogEnd = 1000 end local function disableLowGraphics() if not lowGraphicsEnabled then return end lowGraphicsEnabled = false pcall(function() if prevValues.QualityLevel then settings().Rendering.QualityLevel = prevValues.QualityLevel end end) if prevValues.GlobalShadows ~= nil then Lighting.GlobalShadows = prevValues.GlobalShadows end if prevValues.Brightness ~= nil then Lighting.Brightness = prevValues.Brightness end if prevValues.FogEnd ~= nil then Lighting.FogEnd = prevValues.FogEnd end end
+
+toggleBtn.MouseButton1Click:Connect(function() if lowGraphicsEnabled then disableLowGraphics(); toggleBtn.Text = "Turn Low ON" else enableLowGraphics(); toggleBtn.Text = "Turn Low OFF" end end)
+
+-- Hide Others implementation (client-side visual hide using LocalTransparencyModifier and disabling name tags) local function hidePlayerVisual(plr) if not plr or not plr.Character then return end if hiddenPlayersState[plr] then return end local state = { parts = {}, guis = {} } hiddenPlayersState[plr] = state
+
+for _, part in ipairs(plr.Character:GetDescendants()) do
+    if part:IsA("BasePart") then
+        -- store previous value if exists
+        local prev = 0
+        pcall(function() prev = part.LocalTransparencyModifier end)
+        state.parts[#state.parts+1] = { part = part, prev = prev }
+        pcall(function() part.LocalTransparencyModifier = 1 end)
+    elseif part:IsA("BillboardGui") or part:IsA("SurfaceGui") then
+        state.guis[#state.guis+1] = part
+        pcall(function() part.Enabled = false end)
     end
-    return nearest
 end
-
--- AutoFarm (per-frame)
-local function StartAutoFarm()
-    AutoFarm = true
-    if FarmConnection then FarmConnection:Disconnect() end
-    FarmConnection = RunService.Heartbeat:Connect(function()
-        if not AutoFarm then return end
-        local char = LocalPlayer.Character
-        if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
-        local target = GetNearestZombie()
-        if target and target:FindFirstChild("HumanoidRootPart") then
-            local root = char.HumanoidRootPart
-            root.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, -2)
-            -- spam click kecil tiap frame
-            for i = 1, 5 do
-                pcall(function() VirtualUser:ClickButton1(Vector2.new()) end)
-            end
-        end
-    end)
-end
-
-local function StopAutoFarm()
-    AutoFarm = false
-    if FarmConnection then FarmConnection:Disconnect() FarmConnection = nil end
-end
-
--- AutoOpen pakai teleport (per-frame). Teleport -> wait sedikit -> fire prompt
-local function StartAutoOpen()
-    AutoOpen = true
-    if OpenConnection then OpenConnection:Disconnect() end
-    OpenConnection = RunService.Heartbeat:Connect(function()
-        if not AutoOpen then return end
-        local char = LocalPlayer.Character
-        if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
-        local root = char.HumanoidRootPart
-        for _, prompt in ipairs(Workspace:GetDescendants()) do
-            if not AutoOpen then break end
-            if prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Enabled then
-                local targetPart
-                if prompt.Parent:IsA("BasePart") then
-                    targetPart = prompt.Parent
-                else
-                    targetPart = prompt.Parent:FindFirstChildWhichIsA("BasePart")
-                end
-                if targetPart then
-                    -- teleport sedikit di atas part supaya tidak terjebak di dalamnya
-                    root.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 3, 0))
-                    task.wait(0.03)
-                    pcall(function() fireproximityprompt(prompt) end)
-                    task.wait(0.02) -- jeda kecil antar prompt
-                end
-            end
-        end
-    end)
-end
-
-local function StopAutoOpen()
-    AutoOpen = false
-    if OpenConnection then OpenConnection:Disconnect() OpenConnection = nil end
-end
-
--- ===== GUI =====
-local gui = Instance.new("ScreenGui")
-gui.Name = "HuntyZombieV4"
-gui.ResetOnSpawn = false
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local frame = Instance.new("Frame")
-frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 220, 0, 150)
-frame.Position = UDim2.new(0.5, -110, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.Active = true
-frame.Parent = gui
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "🌀 HuntyZombie v4"
-title.Font = Enum.Font.GothamBold
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextSize = 16
-title.Parent = frame
-
--- Tombol AutoFarm
-local farmBtn = Instance.new("TextButton")
-farmBtn.Size = UDim2.new(1, -20, 0, 35)
-farmBtn.Position = UDim2.new(0, 10, 0, 40)
-farmBtn.Text = "AutoFarm: OFF"
-farmBtn.Font = Enum.Font.Gotham
-farmBtn.TextSize = 14
-farmBtn.TextColor3 = Color3.new(1, 1, 1)
-farmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-farmBtn.Parent = frame
-Instance.new("UICorner", farmBtn).CornerRadius = UDim.new(0, 8)
-
-farmBtn.MouseButton1Click:Connect(function()
-    AutoFarm = not AutoFarm
-    farmBtn.Text = AutoFarm and "AutoFarm: ON" or "AutoFarm: OFF"
-    farmBtn.BackgroundColor3 = AutoFarm and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
-    if AutoFarm then StartAutoFarm() else StopAutoFarm() end
+-- hide character name via hum: DisplayDistanceType if available
+pcall(function()
+    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        state.humDisplay = hum.DisplayDistanceType
+        hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+    end
 end)
 
--- Tombol AutoOpen
-local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(1, -20, 0, 35)
-openBtn.Position = UDim2.new(0, 10, 0, 85)
-openBtn.Text = "Teleport Open Doors: OFF"
-openBtn.Font = Enum.Font.Gotham
-openBtn.TextSize = 14
-openBtn.TextColor3 = Color3.new(1, 1, 1)
-openBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-openBtn.Parent = frame
-Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0, 8)
+end
 
-openBtn.MouseButton1Click:Connect(function()
-    AutoOpen = not AutoOpen
-    openBtn.Text = AutoOpen and "Teleport Open Doors: ON" or "Teleport Open Doors: OFF"
-    openBtn.BackgroundColor3 = AutoOpen and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)
-    if AutoOpen then StartAutoOpen() else StopAutoOpen() end
-end)
+local function showPlayerVisual(plr) local state = hiddenPlayersState[plr] if not state then return end for _, info in ipairs(state.parts) do pcall(function() info.part.LocalTransparencyModifier = info.prev or 0 end) end for _, g in ipairs(state.guis) do pcall(function() g.Enabled = true end) end pcall(function() local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") if hum and state.humDisplay then hum.DisplayDistanceType = state.humDisplay end end) hiddenPlayersState[plr] = nil end
 
--- ShowButton dibuat SEKALI (tidak di-create ulang)
-local showBtn = Instance.new("TextButton")
-showBtn.Name = "ShowButton"
-showBtn.Size = UDim2.new(0, 80, 0, 30)
-showBtn.Position = UDim2.new(0, 20, 0.8, 0)
-showBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-showBtn.TextColor3 = Color3.new(1, 1, 1)
-showBtn.Text = "Show GUI"
-showBtn.Font = Enum.Font.Gotham
-showBtn.TextSize = 14
-showBtn.Parent = gui
-Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0, 8)
-showBtn.Visible = false
-showBtn.Active = true
-showBtn.Draggable = true
-showBtn.ZIndex = 10
+local function hideAllOtherPlayers() for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then hidePlayerVisual(plr) end end end
 
-showBtn.MouseButton1Click:Connect(function()
-    frame.Visible = true
-    showBtn.Visible = false
-end)
+local function showAllOtherPlayers() for plr, _ in pairs(hiddenPlayersState) do pcall(function() showPlayerVisual(plr) end) end end
 
--- Tombol Hide (di frame)
-local hideBtn = Instance.new("TextButton")
-hideBtn.Size = UDim2.new(0, 80, 0, 30)
-hideBtn.Position = UDim2.new(0.5, -40, 1, 10)
-hideBtn.Text = "Hide"
-hideBtn.Font = Enum.Font.Gotham
-hideBtn.TextSize = 14
-hideBtn.TextColor3 = Color3.new(1, 1, 1)
-hideBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-hideBtn.Parent = frame
-Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(0, 8)
+hideBtn.MouseButton1Click:Connect(function() if hideOthersEnabled then -- turn off showAllOtherPlayers() hideOthersEnabled = false hideBtn.Text = "Hide Others" hideBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) else -- turn on hideAllOtherPlayers() hideOthersEnabled = true hideBtn.Text = "Show Others" hideBtn.BackgroundColor3 = Color3.fromRGB(60,200,80) -- green end end)
 
-local hidden = false
-hideBtn.MouseButton1Click:Connect(function()
-    hidden = not hidden
-    frame.Visible = not hidden
-    showBtn.Visible = hidden
-end)
+-- Keep hiding state consistent when players join/leave or character respawn Players.PlayerRemoving:Connect(function(plr) hiddenPlayersState[plr] = nil end) Players.PlayerAdded:Connect(function(plr) -- if hideOthersEnabled and player added after, hide them plr.CharacterAdded:Connect(function(char) if hideOthersEnabled and plr ~= LocalPlayer then -- small delay to ensure parts exist task.wait(0.1) hidePlayerVisual(plr) end end) end)
+
+-- Also handle when existing players respawn for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then plr.CharacterAdded:Connect(function() if hideOthersEnabled then task.wait(0.1) hidePlayerVisual(plr) end end) end end
+
+-- FPS & Ping updater (safe) local fps, frameCount, accumulator = 0, 0, 0 RunService.RenderStepped:Connect(function(dt) frameCount = frameCount + 1 accumulator = accumulator + dt if accumulator >= 0.5 then fps = math.floor(frameCount / accumulator + 0.5) frameCount, accumulator = 0, 0 local ping = "--" pcall(function() if Stats and Stats:FindFirstChild("Network") and Stats.Network:FindFirstChild("ServerStatsItem") then local item = Stats.Network.ServerStatsItem:FindFirstChild("Data Ping") if item then ping = math.floor(item:GetValue() + 0.5) end end end) fpsLabel.Text = string.format("FPS: %s | PING: %s", tostring(fps), tostring(ping)) end end)
+
+-- Parent GUI (gethui fallback) local suc, gh = pcall(function() return gethui() end) screenGui.Parent = (suc and gh) or game:GetService("CoreGui")
+
+-- put mainFrame into screenGui mainFrame.Parent = screenGui
+
+print("[Low Graphics GUI] Executor Safe with Hide Others loaded")
+
