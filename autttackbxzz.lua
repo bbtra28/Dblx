@@ -1,99 +1,161 @@
--- Low Graphics Toggle GUI (Executor Safe) with Hide Others + Draggable Show Button -- Paste ke executor dan jalankan. -- Fitur lengkap: -- • Toggle Low Graphics on/off -- • Hide Others (client-side visual hide for other players) with ON/OFF (instan) -- • FPS & Ping display -- • Minimize (–) and Close (X) -- • When minimized, a draggable small "Show GUI" button appears (position follows last mainFrame position)
-
-local Players = game:GetService("Players") local RunService = game:GetService("RunService") local Lighting = game:GetService("Lighting") local UserInputService = game:GetService("UserInputService")
-
-local Stats = nil pcall(function() Stats = game:GetService("Stats") end)
-
+-- 🟢 Auto Walk GUI + Show/Hide
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local PathfindingService = game:GetService("PathfindingService")
+local CoreGui = game.CoreGui
 
--- store original rendering values local original = { QualityLevel = nil, GlobalShadows = Lighting.GlobalShadows, Brightness = Lighting.Brightness, FogEnd = Lighting.FogEnd } pcall(function() original.QualityLevel = settings().Rendering.QualityLevel end)
+-- === GUI Utama ===
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoWalkGUI"
+ScreenGui.Parent = CoreGui
 
-local lowGraphicsEnabled = false local hideOthersEnabled = false
+-- === Frame Utama ===
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 140)
+Frame.Position = UDim2.new(0.05, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
 
--- For reverting hide modifications local hiddenPlayersState = {}
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0, 10)
 
--- Utility: safe pcall wrapper local function safe(fn) local ok, res = pcall(fn) return ok, res end
+-- === Title ===
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "🚶 Auto Walk"
+title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Parent = Frame
 
--- GUI main local screenGui = Instance.new("ScreenGui") screenGui.Name = "LowGraphicsGUI" screenGui.ResetOnSpawn = false
+-- === Tombol Tandai ===
+local markButton = Instance.new("TextButton")
+markButton.Size = UDim2.new(1, -20, 0, 30)
+markButton.Position = UDim2.new(0, 10, 0, 40)
+markButton.Text = "🎯 Tandai Posisi"
+markButton.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+markButton.TextColor3 = Color3.new(1, 1, 1)
+markButton.Font = Enum.Font.SourceSansBold
+markButton.TextSize = 18
+markButton.Parent = Frame
+Instance.new("UICorner", markButton)
 
-local mainFrame = Instance.new("Frame") mainFrame.Name = "Main" mainFrame.Size = UDim2.new(0, 220, 0, 120) mainFrame.Position = UDim2.new(0, 20, 0, 80) mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30) mainFrame.BorderSizePixel = 0 mainFrame.Parent = screenGui
+-- === Tombol Jalan ===
+local walkButton = Instance.new("TextButton")
+walkButton.Size = UDim2.new(1, -20, 0, 30)
+walkButton.Position = UDim2.new(0, 10, 0, 80)
+walkButton.Text = "🚶 Mulai Jalan"
+walkButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+walkButton.TextColor3 = Color3.new(1, 1, 1)
+walkButton.Font = Enum.Font.SourceSansBold
+walkButton.TextSize = 18
+walkButton.Parent = Frame
+Instance.new("UICorner", walkButton)
 
-local title = Instance.new("TextLabel") title.Name = "Title" title.Size = UDim2.new(1, -60, 0, 28) title.BackgroundTransparency = 1 title.Text = "Low Graphics" title.Font = Enum.Font.SourceSansBold title.TextSize = 18 title.TextColor3 = Color3.fromRGB(255,255,255) title.TextXAlignment = Enum.TextXAlignment.Left title.Parent = mainFrame
+-- === Tombol Hide ===
+local hideButton = Instance.new("TextButton")
+hideButton.Size = UDim2.new(1, -20, 0, 30)
+hideButton.Position = UDim2.new(0, 10, 0, 115)
+hideButton.Text = "👁️ Hide GUI"
+hideButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+hideButton.TextColor3 = Color3.new(1, 1, 1)
+hideButton.Font = Enum.Font.SourceSansBold
+hideButton.TextSize = 18
+hideButton.Parent = Frame
+Instance.new("UICorner", hideButton)
 
--- minimize button (–) local minimizeBtn = Instance.new("TextButton") minimizeBtn.Size = UDim2.new(0,28,0,24) minimizeBtn.Position = UDim2.new(1, -60, 0, 2) minimizeBtn.Text = "–" minimizeBtn.Font = Enum.Font.SourceSansBold minimizeBtn.TextSize = 18 minimizeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60) minimizeBtn.TextColor3 = Color3.fromRGB(255,255,255) minimizeBtn.BorderSizePixel = 0 minimizeBtn.Parent = mainFrame
+-- === Tombol Show (di luar frame) ===
+local showButton = Instance.new("TextButton")
+showButton.Size = UDim2.new(0, 120, 0, 40)
+showButton.Position = UDim2.new(0.05, 0, 0.3, 0)
+showButton.Text = "👁️ Show GUI"
+showButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+showButton.TextColor3 = Color3.new(1, 1, 1)
+showButton.Font = Enum.Font.SourceSansBold
+showButton.TextSize = 18
+showButton.Visible = false
+showButton.Draggable = true
+showButton.Parent = ScreenGui
+Instance.new("UICorner", showButton)
 
--- close button (X) local closeBtn = Instance.new("TextButton") closeBtn.Size = UDim2.new(0,28,0,24) closeBtn.Position = UDim2.new(1, -30, 0, 2) closeBtn.Text = "X" closeBtn.Font = Enum.Font.SourceSansBold closeBtn.TextSize = 18 closeBtn.BackgroundColor3 = Color3.fromRGB(120,40,40) closeBtn.TextColor3 = Color3.fromRGB(255,255,255) closeBtn.BorderSizePixel = 0 closeBtn.Parent = mainFrame
+-- === Variabel ===
+local targetPos = nil
+local walking = false
 
--- Toggle Low Graphics button local toggleBtn = Instance.new("TextButton") toggleBtn.Size = UDim2.new(1, -20, 0, 34) toggleBtn.Position = UDim2.new(0, 10, 0, 34) toggleBtn.Text = "Turn Low ON" toggleBtn.Font = Enum.Font.SourceSans toggleBtn.TextSize = 16 toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) toggleBtn.TextColor3 = Color3.fromRGB(255,255,255) toggleBtn.BorderSizePixel = 0 toggleBtn.Parent = mainFrame
+-- === Fungsi Jalan Otomatis ===
+local function WalkTo(position)
+	local character = LocalPlayer.Character
+	if not character or not character:FindFirstChild("Humanoid") then return end
 
--- Hide Others button (same style) local hideBtn = Instance.new("TextButton") hideBtn.Size = UDim2.new(1, -20, 0, 34) hideBtn.Position = UDim2.new(0, 10, 0, 74) hideBtn.Text = "Hide Others" hideBtn.Font = Enum.Font.SourceSans hideBtn.TextSize = 16 hideBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) hideBtn.TextColor3 = Color3.fromRGB(255,255,255) hideBtn.BorderSizePixel = 0 hideBtn.Parent = mainFrame
+	local humanoid = character:FindFirstChild("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 
--- FPS label (not visible when minimized) local fpsLabel = Instance.new("TextLabel") fpsLabel.Size = UDim2.new(1, -20, 0, 14) fpsLabel.Position = UDim2.new(0, 10, 1, -20) fpsLabel.BackgroundTransparency = 1 fpsLabel.Text = "FPS: -- | PING: --" fpsLabel.Font = Enum.Font.SourceSans fpsLabel.TextSize = 13 fpsLabel.TextColor3 = Color3.fromRGB(220,220,220) fpsLabel.TextXAlignment = Enum.TextXAlignment.Left fpsLabel.Parent = mainFrame
-
--- Dragging logic for mainFrame local dragging, dragInput, dragStart, startPos
-
-title.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dragStart = input.Position startPos = mainFrame.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end) end end)
-
-title.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end end)
-
-UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then local delta = input.Position - dragStart mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
-
--- Show button (small draggable) appears when main GUI minimized local showButton = Instance.new("TextButton") showButton.Name = "ShowButton" showButton.Size = UDim2.new(0, 100, 0, 30) showButton.BackgroundColor3 = Color3.fromRGB(60,60,60) showButton.TextColor3 = Color3.fromRGB(255,255,255) showButton.Text = "Show GUI" showButton.Font = Enum.Font.SourceSans showButton.TextSize = 16 showButton.Visible = false
-
--- Draggable for showButton local sbDragging, sbDragInput, sbDragStart, sbStartPos showButton.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sbDragging = true sbDragStart = input.Position sbStartPos = showButton.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then sbDragging = false end end) end end) showButton.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then sbDragInput = input end end) UserInputService.InputChanged:Connect(function(input) if input == sbDragInput and sbDragging then local delta = input.Position - sbDragStart showButton.Position = UDim2.new(sbStartPos.X.Scale, sbStartPos.X.Offset + delta.X, sbStartPos.Y.Scale, sbStartPos.Y.Offset + delta.Y) end end)
-
--- Minimize / Close behavior local hidden = false local function setHidden(h) hidden = h if hidden then -- hide all except title, minimize and close (title still visible area) for _, child in ipairs(mainFrame:GetChildren()) do if child ~= title and child ~= minimizeBtn and child ~= closeBtn then child.Visible = false end end mainFrame.Size = UDim2.new(0, 220, 0, 28) -- position showButton to match mainFrame position (so it feels natural) showButton.Position = UDim2.new(0, mainFrame.Position.X.Offset, 0, mainFrame.Position.Y.Offset) showButton.Visible = true -- parent showButton to the same parent if not showButton.Parent then showButton.Parent = screenGui end else for _, child in ipairs(mainFrame:GetChildren()) do child.Visible = true end mainFrame.Size = UDim2.new(0, 220, 0, 120) showButton.Visible = false end end
-
-minimizeBtn.MouseButton1Click:Connect(function() setHidden(not hidden) end) showButton.MouseButton1Click:Connect(function() setHidden(false) end)
-
-closeBtn.MouseButton1Click:Connect(function() pcall(function() screenGui:Destroy() end) end)
-
--- Low graphics toggle implementation local prevValues = {} local function enableLowGraphics() if lowGraphicsEnabled then return end lowGraphicsEnabled = true pcall(function() prevValues.QualityLevel = settings().Rendering.QualityLevel end) prevValues.GlobalShadows = Lighting.GlobalShadows prevValues.Brightness = Lighting.Brightness prevValues.FogEnd = Lighting.FogEnd pcall(function() settings().Rendering.QualityLevel = 1 end) Lighting.GlobalShadows = false Lighting.Brightness = math.clamp(Lighting.Brightness * 0.9, 0, 10) Lighting.FogEnd = 1000 end local function disableLowGraphics() if not lowGraphicsEnabled then return end lowGraphicsEnabled = false pcall(function() if prevValues.QualityLevel then settings().Rendering.QualityLevel = prevValues.QualityLevel end end) if prevValues.GlobalShadows ~= nil then Lighting.GlobalShadows = prevValues.GlobalShadows end if prevValues.Brightness ~= nil then Lighting.Brightness = prevValues.Brightness end if prevValues.FogEnd ~= nil then Lighting.FogEnd = prevValues.FogEnd end end
-
-toggleBtn.MouseButton1Click:Connect(function() if lowGraphicsEnabled then disableLowGraphics(); toggleBtn.Text = "Turn Low ON" else enableLowGraphics(); toggleBtn.Text = "Turn Low OFF" end end)
-
--- Hide Others implementation (client-side visual hide using LocalTransparencyModifier and disabling name tags) local function hidePlayerVisual(plr) if not plr or not plr.Character then return end if hiddenPlayersState[plr] then return end local state = { parts = {}, guis = {} } hiddenPlayersState[plr] = state
-
-for _, part in ipairs(plr.Character:GetDescendants()) do
-    if part:IsA("BasePart") then
-        -- store previous value if exists
-        local prev = 0
-        pcall(function() prev = part.LocalTransparencyModifier end)
-        state.parts[#state.parts+1] = { part = part, prev = prev }
-        pcall(function() part.LocalTransparencyModifier = 1 end)
-    elseif part:IsA("BillboardGui") or part:IsA("SurfaceGui") then
-        state.guis[#state.guis+1] = part
-        pcall(function() part.Enabled = false end)
-    end
+	local path = PathfindingService:CreatePath({
+		AgentRadius = 2,
+		AgentHeight = 5,
+		AgentCanJump = true
+	})
+	
+	path:ComputeAsync(root.Position, position)
+	local waypoints = path:GetWaypoints()
+	walking = true
+	
+	for _, waypoint in ipairs(waypoints) do
+		if not walking then break end
+		humanoid:MoveTo(waypoint.Position)
+		humanoid.MoveToFinished:Wait()
+	end
+	
+	walking = false
 end
--- hide character name via hum: DisplayDistanceType if available
-pcall(function()
-    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-    if hum then
-        state.humDisplay = hum.DisplayDistanceType
-        hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-    end
+
+-- === Event Klik "Tandai Posisi" ===
+markButton.MouseButton1Click:Connect(function()
+	game.StarterGui:SetCore("SendNotification", {
+		Title = "Auto Walk";
+		Text = "Klik tanah untuk tandai posisi!";
+		Duration = 4;
+	})
+	
+	local connection
+	connection = Mouse.Button1Down:Connect(function()
+		if Mouse.Target then
+			targetPos = Mouse.Hit.p
+			game.StarterGui:SetCore("SendNotification", {
+				Title = "Posisi Ditandai!";
+				Text = string.format("x: %.1f, y: %.1f, z: %.1f", targetPos.X, targetPos.Y, targetPos.Z);
+				Duration = 4;
+			})
+			connection:Disconnect()
+		end
+	end)
 end)
 
-end
+-- === Event Klik "Mulai Jalan" ===
+walkButton.MouseButton1Click:Connect(function()
+	if targetPos then
+		WalkTo(targetPos)
+	else
+		game.StarterGui:SetCore("SendNotification", {
+			Title = "❌ Gagal";
+			Text = "Belum ada posisi yang ditandai!";
+			Duration = 3;
+		})
+	end
+end)
 
-local function showPlayerVisual(plr) local state = hiddenPlayersState[plr] if not state then return end for _, info in ipairs(state.parts) do pcall(function() info.part.LocalTransparencyModifier = info.prev or 0 end) end for _, g in ipairs(state.guis) do pcall(function() g.Enabled = true end) end pcall(function() local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") if hum and state.humDisplay then hum.DisplayDistanceType = state.humDisplay end end) hiddenPlayersState[plr] = nil end
+-- === Event Hide/Show GUI ===
+hideButton.MouseButton1Click:Connect(function()
+	Frame.Visible = false
+	showButton.Visible = true
+end)
 
-local function hideAllOtherPlayers() for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then hidePlayerVisual(plr) end end end
-
-local function showAllOtherPlayers() for plr, _ in pairs(hiddenPlayersState) do pcall(function() showPlayerVisual(plr) end) end end
-
-hideBtn.MouseButton1Click:Connect(function() if hideOthersEnabled then -- turn off showAllOtherPlayers() hideOthersEnabled = false hideBtn.Text = "Hide Others" hideBtn.BackgroundColor3 = Color3.fromRGB(50,50,50) else -- turn on hideAllOtherPlayers() hideOthersEnabled = true hideBtn.Text = "Show Others" hideBtn.BackgroundColor3 = Color3.fromRGB(60,200,80) -- green end end)
-
--- Keep hiding state consistent when players join/leave or character respawn Players.PlayerRemoving:Connect(function(plr) hiddenPlayersState[plr] = nil end) Players.PlayerAdded:Connect(function(plr) -- if hideOthersEnabled and player added after, hide them plr.CharacterAdded:Connect(function(char) if hideOthersEnabled and plr ~= LocalPlayer then -- small delay to ensure parts exist task.wait(0.1) hidePlayerVisual(plr) end end) end)
-
--- Also handle when existing players respawn for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then plr.CharacterAdded:Connect(function() if hideOthersEnabled then task.wait(0.1) hidePlayerVisual(plr) end end) end end
-
--- FPS & Ping updater (safe) local fps, frameCount, accumulator = 0, 0, 0 RunService.RenderStepped:Connect(function(dt) frameCount = frameCount + 1 accumulator = accumulator + dt if accumulator >= 0.5 then fps = math.floor(frameCount / accumulator + 0.5) frameCount, accumulator = 0, 0 local ping = "--" pcall(function() if Stats and Stats:FindFirstChild("Network") and Stats.Network:FindFirstChild("ServerStatsItem") then local item = Stats.Network.ServerStatsItem:FindFirstChild("Data Ping") if item then ping = math.floor(item:GetValue() + 0.5) end end end) fpsLabel.Text = string.format("FPS: %s | PING: %s", tostring(fps), tostring(ping)) end end)
-
--- Parent GUI (gethui fallback) local suc, gh = pcall(function() return gethui() end) screenGui.Parent = (suc and gh) or game:GetService("CoreGui")
-
--- put mainFrame into screenGui mainFrame.Parent = screenGui
-
-print("[Low Graphics GUI] Executor Safe with Hide Others loaded")
-
+showButton.MouseButton1Click:Connect(function()
+	Frame.Visible = true
+	showButton.Visible = false
+end)
