@@ -1,12 +1,12 @@
--- 📱 Mobile Click (Tap) to Attach Part Script
--- by ChatGPT (GPT-5)
+-- 📱 Tap Part untuk Nempel (Mobile Fixed Version)
+-- by GPT-5
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
--- GUI Setup
+-- ===== GUI SETUP =====
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "MobileAttachGUI"
 
@@ -53,11 +53,11 @@ detachBtn.TextColor3 = Color3.new(1, 1, 1)
 detachBtn.Font = Enum.Font.SourceSansBold
 detachBtn.TextSize = 16
 
--- Show/Hide Button
+-- ===== SHOW / HIDE BUTTON =====
 local toggle = Instance.new("TextButton", gui)
 toggle.Size = UDim2.new(0, 160, 0, 35)
 toggle.Position = UDim2.new(0, 20, 0, 20)
-toggle.Text = "📂 Show Attach GUI"
+toggle.Text = "📁 Hide Attach GUI"
 toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 toggle.TextColor3 = Color3.new(1, 1, 1)
 toggle.Font = Enum.Font.SourceSansBold
@@ -70,9 +70,8 @@ toggle.MouseButton1Click:Connect(function()
 	toggle.Text = visible and "📁 Hide Attach GUI" or "📂 Show Attach GUI"
 end)
 
--- ===== Attach System =====
-local weld
-local attachedPart
+-- ===== ATTACH SYSTEM =====
+local weld, attachedPart
 
 local function attachPart(part)
 	local char = LocalPlayer.Character
@@ -91,12 +90,6 @@ local function attachPart(part)
 
 	attachInfo.Text = "📦 Nempel: " .. part.Name
 	attachInfo.TextColor3 = Color3.fromRGB(100, 255, 100)
-
-	game.StarterGui:SetCore("SendNotification", {
-		Title = "📎 Attach",
-		Text = "Part '" .. part.Name .. "' menempel ke kamu!",
-		Duration = 3
-	})
 end
 
 detachBtn.MouseButton1Click:Connect(function()
@@ -107,17 +100,20 @@ detachBtn.MouseButton1Click:Connect(function()
 	attachedPart = nil
 	attachInfo.Text = "Tidak ada part menempel"
 	attachInfo.TextColor3 = Color3.fromRGB(180, 255, 180)
-
-	game.StarterGui:SetCore("SendNotification", {
-		Title = "🗙 Lepas",
-		Text = "Part sudah dilepaskan.",
-		Duration = 3
-	})
 end)
 
--- ===== Touch Tap Detection (mobile tap)
-UserInputService.TouchTapInWorld:Connect(function(position, processed, result)
-	if processed then return end
+-- ===== MOBILE TAP RAYCAST FIX =====
+UserInputService.TouchTap:Connect(function(touchPositions)
+	local screenPos = touchPositions[1]
+	if not screenPos then return end
+
+	-- Buat ray dari kamera ke arah tap
+	local ray = Camera:ViewportPointToRay(screenPos.X, screenPos.Y)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+	local result = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
 	if result and result.Instance and result.Instance:IsA("BasePart") then
 		attachPart(result.Instance)
 	end
