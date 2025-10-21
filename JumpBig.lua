@@ -1,23 +1,23 @@
---// Big Jump Button (Mobile Executor Compatible)
+--// Universal Big Jump Button (Mobile Executor FIX)
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
 
 -- Matikan tombol bawaan
 pcall(function()
     StarterGui:SetCore("MobileJumpButtonEnabled", false)
 end)
 
--- GUI setup
+-- GUI utama
 local gui = Instance.new("ScreenGui")
-gui.Name = "CustomJumpGui"
+gui.Name = "BigJumpGui"
 gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Tombol loncat besar
+-- Tombol besar
 local jumpButton = Instance.new("ImageButton")
 jumpButton.Name = "JumpButton"
 jumpButton.Size = UDim2.new(0, 180, 0, 180)
@@ -28,7 +28,6 @@ jumpButton.BackgroundTransparency = 0.3
 jumpButton.Image = "rbxassetid://3926305904"
 jumpButton.ImageRectOffset = Vector2.new(4, 204)
 jumpButton.ImageRectSize = Vector2.new(36, 36)
-jumpButton.AutoButtonColor = true
 jumpButton.Parent = gui
 
 local stroke = Instance.new("UIStroke")
@@ -40,18 +39,18 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(1, 0)
 corner.Parent = jumpButton
 
--- Fungsi lompat (pakai VirtualInput)
-local function doJump()
-	local hum = character:FindFirstChildOfClass("Humanoid")
-	if hum and hum:GetState() ~= Enum.HumanoidStateType.Dead then
-		hum.Jump = true
-	end
+-- Fungsi loncat universal
+local function forceJump()
+    -- Simulasikan tekan tombol spasi (jump default)
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
 end
 
--- Perbaikan touch: deteksi manual & trigger jump
+-- Saat tombol disentuh
 jumpButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
-		doJump()
+		forceJump()
 		jumpButton.BackgroundTransparency = 0.1
 		jumpButton:TweenSize(UDim2.new(0, 160, 0, 160), "Out", "Quad", 0.08, true)
 	end
@@ -64,7 +63,7 @@ jumpButton.InputEnded:Connect(function(input)
 	end
 end)
 
--- Draggable (biar bisa dipindah)
+-- Draggable
 local dragging, dragStart, startPos
 jumpButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
@@ -87,4 +86,4 @@ jumpButton.InputEnded:Connect(function(input)
 	end
 end)
 
-print("✅ Tombol loncat besar aktif (versi fix touch jump)")
+print("✅ Big Jump Button aktif — versi VirtualInputManager (lompat fix 100%)")
