@@ -1,8 +1,10 @@
--- 🥔 Extreme Low Graphics Mode (Executor)
--- Auto aktif saat dijalankan + GUI toggle (draggable)
+-- 🌐 Roblox Low Graphics + Data Saver (No Fog, No Sound)
+-- Auto aktif saat dijalankan + GUI Toggle (Executor Version)
 
 local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
+local SoundService = game:GetService("SoundService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local enabled = true
@@ -28,28 +30,28 @@ corner.CornerRadius = UDim.new(0, 12)
 
 local button = Instance.new("TextButton")
 button.Size = UDim2.new(1, 0, 1, 0)
-button.Text = "🔴 Low Graphics: ON"
+button.Text = "🔴 Data Saver: ON"
 button.TextColor3 = Color3.fromRGB(255,100,100)
 button.Font = Enum.Font.SourceSansBold
 button.TextScaled = true
 button.BackgroundTransparency = 1
 button.Parent = frame
 
--- === FUNGSI LOW GRAPHICS EKSTREM ===
+-- === MODE HEMAT KUOTA + GRAFIS RENDAH ===
 local function LowGraphics()
     pcall(function()
-        -- lighting basic
+        -- Lighting (tanpa kabut)
         Lighting.GlobalShadows = false
         Lighting.Brightness = 1
         Lighting.FogStart = 0
-        Lighting.FogEnd = 60
-        Lighting.Ambient = Color3.fromRGB(100,100,100)
-        Lighting.OutdoorAmbient = Color3.fromRGB(100,100,100)
+        Lighting.FogEnd = 100000 -- tanpa kabut
+        Lighting.Ambient = Color3.fromRGB(120,120,120)
+        Lighting.OutdoorAmbient = Color3.fromRGB(120,120,120)
         Lighting.EnvironmentDiffuseScale = 0
         Lighting.EnvironmentSpecularScale = 0
         Lighting.ClockTime = 12
 
-        -- disable efek lighting
+        -- Matikan efek lighting berat
         for _,v in ipairs(Lighting:GetChildren()) do
             if v:IsA("BlurEffect") or v:IsA("SunRaysEffect")
             or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect")
@@ -58,14 +60,28 @@ local function LowGraphics()
             end
         end
 
-        -- hapus efek & render berat
-        for _, obj in ipairs(workspace:GetDescendants()) do
+        -- Matikan suara untuk hemat kuota
+        for _,s in ipairs(SoundService:GetDescendants()) do
+            if s:IsA("Sound") then
+                s.Volume = 0
+            end
+        end
+
+        -- Hemat data lewat streaming radius (muat area kecil saja)
+        pcall(function()
+            Workspace:SetAttribute("StreamingEnabled", true)
+            Workspace.StreamingMinRadius = 20
+            Workspace.StreamingTargetRadius = 60
+        end)
+
+        -- Hilangkan efek visual berat
+        for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("ParticleEmitter") or obj:IsA("Trail")
             or obj:IsA("Smoke") or obj:IsA("Fire")
             or obj:IsA("Sparkles") then
                 obj.Enabled = false
             elseif obj:IsA("Decal") or obj:IsA("Texture") then
-                obj.Transparency = 1
+                obj.Transparency = 0.8
             elseif obj:IsA("BasePart") then
                 obj.CastShadow = false
                 obj.Reflectance = 0
@@ -73,9 +89,9 @@ local function LowGraphics()
             end
         end
 
-        -- simplify terrain
-        if workspace:FindFirstChildOfClass("Terrain") then
-            local t = workspace.Terrain
+        -- Simplify terrain
+        if Workspace:FindFirstChildOfClass("Terrain") then
+            local t = Workspace.Terrain
             t.WaterWaveSize = 0
             t.WaterWaveSpeed = 0
             t.WaterReflectance = 0
@@ -83,16 +99,16 @@ local function LowGraphics()
         end
 
         StarterGui:SetCore("ChatMakeSystemMessage", {
-            Text = "[Low Graphics] Mode grafis rendah aktif (Ekstrem) 🥔",
+            Text = "[Data Saver] Mode hemat kuota & grafis rendah aktif 🌐",
             Color = Color3.fromRGB(255,200,0)
         })
     end)
 end
 
--- === FUNGSI RESTORE ===
+-- === MODE NORMAL ===
 local function RestoreGraphics()
     pcall(function()
-        for _, obj in ipairs(workspace:GetDescendants()) do
+        for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("ParticleEmitter") or obj:IsA("Trail")
             or obj:IsA("Smoke") or obj:IsA("Fire")
             or obj:IsA("Sparkles") then
@@ -112,6 +128,14 @@ local function RestoreGraphics()
             end
         end
 
+        -- Pulihkan suara
+        for _,s in ipairs(SoundService:GetDescendants()) do
+            if s:IsA("Sound") then
+                s.Volume = 1
+            end
+        end
+
+        -- Pulihkan lighting
         Lighting.GlobalShadows = true
         Lighting.Brightness = 2
         Lighting.FogEnd = 100000
@@ -121,7 +145,7 @@ local function RestoreGraphics()
         Lighting.EnvironmentSpecularScale = 1
 
         StarterGui:SetCore("ChatMakeSystemMessage", {
-            Text = "[Low Graphics] Mode normal dikembalikan 🔄",
+            Text = "[Data Saver] Mode normal dikembalikan 🔄",
             Color = Color3.fromRGB(100,255,100)
         })
     end)
@@ -131,15 +155,15 @@ end
 button.MouseButton1Click:Connect(function()
     if enabled then
         RestoreGraphics()
-        button.Text = "🟢 Low Graphics: OFF"
+        button.Text = "🟢 Data Saver: OFF"
         button.TextColor3 = Color3.fromRGB(100,255,100)
     else
         LowGraphics()
-        button.Text = "🔴 Low Graphics: ON"
+        button.Text = "🔴 Data Saver: ON"
         button.TextColor3 = Color3.fromRGB(255,100,100)
     end
     enabled = not enabled
 end)
 
--- === AUTO AKTIF SAAT MASUK ===
+-- === AUTO AKTIF ===
 LowGraphics()
