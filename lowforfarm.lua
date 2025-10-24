@@ -1,5 +1,5 @@
--- 🌐 FastLoad + Low Graphics + Data Saver (Draggable GUI)
--- Optimized for mobile executors (Arceus X, Delta, VegaX, Fluxus)
+-- 🌐 Data Saver GUI (Low Graphic, Hemat Kuota, Draggable, Save Posisi)
+-- 💻 Kompatibel semua executor: Arceus X, Delta, VegaX, Fluxus, Hydrogen, dll
 
 task.spawn(function()
     local Lighting = game:GetService("Lighting")
@@ -7,10 +7,29 @@ task.spawn(function()
     local StarterGui = game:GetService("StarterGui")
     local SoundService = game:GetService("SoundService")
     local Players = game:GetService("Players")
+    local UIS = game:GetService("UserInputService")
     local LocalPlayer = Players.LocalPlayer
     local enabled = true
 
-    -- 🚀 Streaming agar load cepat & hemat kuota
+    -- 📦 Simpan data posisi (pakai attribute agar bertahan per sesi)
+    local function SavePos(x, y)
+        pcall(function()
+            LocalPlayer:SetAttribute("DataSaver_PosX", x)
+            LocalPlayer:SetAttribute("DataSaver_PosY", y)
+        end)
+    end
+
+    local function LoadPos()
+        local x = LocalPlayer:GetAttribute("DataSaver_PosX")
+        local y = LocalPlayer:GetAttribute("DataSaver_PosY")
+        if x and y then
+            return UDim2.new(0, x, 0, y)
+        else
+            return UDim2.new(0.8, 0, 0.1, 0)
+        end
+    end
+
+    -- 🚀 Streaming agar cepat & hemat kuota
     pcall(function()
         Workspace:SetAttribute("StreamingEnabled", true)
         Workspace.StreamingMinRadius = 10
@@ -21,15 +40,14 @@ task.spawn(function()
     local gui = Instance.new("ScreenGui")
     gui.Name = "DataSaverGUI"
     gui.ResetOnSpawn = false
-    gui.Parent = game.CoreGui
+    gui.Parent = game:GetService("CoreGui")
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 150, 0, 50)
-    frame.Position = UDim2.new(0.8, 0, 0.1, 0)
+    frame.Position = LoadPos()
     frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     frame.BackgroundTransparency = 0.25
     frame.Active = true
-    frame.Draggable = true
     frame.Parent = gui
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
@@ -42,7 +60,47 @@ task.spawn(function()
     button.TextScaled = true
     button.Parent = frame
 
-    -- 🧩 Fungsi aktif mode hemat
+    -- ✅ Draggable fix + simpan posisi
+    local dragging, dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        local newPos = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        frame.Position = newPos
+        SavePos(newPos.X.Offset, newPos.Y.Offset)
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+
+    -- ⚙️ Mode Hemat
     local function EnableLowGraphics()
         pcall(function()
             Lighting.GlobalShadows = false
@@ -88,15 +146,10 @@ task.spawn(function()
                 t.WaterReflectance = 0
                 t.WaterTransparency = 1
             end
-
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[Data Saver] Mode aktif 🌐 (hemat kuota & cepat)",
-                Color = Color3.fromRGB(255,200,0)
-            })
         end)
     end
 
-    -- 🧩 Fungsi kembalikan normal
+    -- 🌈 Mode Normal
     local function DisableLowGraphics()
         pcall(function()
             Lighting.GlobalShadows = true
@@ -119,15 +172,10 @@ task.spawn(function()
                     obj.CastShadow = true
                 end
             end
-
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[Data Saver] Mode dimatikan 🔄",
-                Color = Color3.fromRGB(100,255,100)
-            })
         end)
     end
 
-    -- 🎛️ Tombol toggle
+    -- 🔘 Toggle tombol
     button.MouseButton1Click:Connect(function()
         if enabled then
             DisableLowGraphics()
@@ -141,7 +189,7 @@ task.spawn(function()
         enabled = not enabled
     end)
 
-    -- 🚀 Jalankan otomatis setelah game siap
+    -- 🚀 Auto aktif
     game.Loaded:Wait()
     task.wait(1)
     EnableLowGraphics()
