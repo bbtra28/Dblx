@@ -1,44 +1,55 @@
--- Buat GUI baru
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-local Title = Instance.new("TextLabel", Frame)
-local PositionLabel = Instance.new("TextLabel", Frame)
+-- 🎃 Script by GPT-5 | Find & Track Pumpkin Event Items
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
 
--- Properti Frame
-Frame.Size = UDim2.new(0, 180, 0, 80)
-Frame.Position = UDim2.new(0.05, 0, 0.1, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-Frame.BackgroundTransparency = 0.3
-Frame.Name = "PositionGUI"
+-- Fungsi untuk buat highlight dan label
+local function highlightPumpkin(pumpkin)
+    -- Bikin jadi kelihatan
+    pumpkin.Transparency = 0
+    pumpkin.Material = Enum.Material.Neon
+    pumpkin.Color = Color3.fromRGB(255, 140, 0)
 
--- Title
-Title.Size = UDim2.new(1, 0, 0, 25)
-Title.BackgroundTransparency = 1
-Title.Text = "📍 Koordinat Posisi"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextScaled = true
-Title.Font = Enum.Font.SourceSansBold
+    -- Highlight
+    local hl = Instance.new("Highlight", pumpkin)
+    hl.FillColor = Color3.fromRGB(255, 100, 0)
+    hl.OutlineColor = Color3.fromRGB(255, 255, 0)
+    hl.FillTransparency = 0.5
 
--- Label untuk posisi
-PositionLabel.Size = UDim2.new(1, -10, 1, -25)
-PositionLabel.Position = UDim2.new(0, 5, 0, 25)
-PositionLabel.BackgroundTransparency = 1
-PositionLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-PositionLabel.TextScaled = true
-PositionLabel.Font = Enum.Font.SourceSans
+    -- Billboard (tulisan di atas pumpkin)
+    local billboard = Instance.new("BillboardGui", pumpkin)
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
 
--- Update posisi player setiap 0.1 detik
-task.spawn(function()
-	while task.wait(0.1) do
-		local player = game.Players.LocalPlayer
-		local char = player.Character or player.CharacterAdded:Wait()
-		local hrp = char:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			local pos = hrp.Position
-			PositionLabel.Text = string.format("X: %.1f\nY: %.1f\nZ: %.1f", pos.X, pos.Y, pos.Z)
-		end
-	end
-end)
+    local label = Instance.new("TextLabel", billboard)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+
+    -- Update jarak ke player tiap 0.5 detik
+    task.spawn(function()
+        while pumpkin and pumpkin.Parent do
+            local distance = (hrp.Position - pumpkin.Position).Magnitude
+            label.Text = ("🎃 Pumpkin (%.1f m)"):format(distance)
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- Cari semua object di workspace yang namanya ada "pumpkin"
+local count = 0
+for _, obj in ipairs(workspace:GetDescendants()) do
+    if string.find(string.lower(obj.Name), "pumpkin") and obj:IsA("BasePart") then
+        highlightPumpkin(obj)
+        count += 1
+    end
+end
+
+if count > 0 then
+    print("🎃 Ditemukan " .. count .. " pumpkin! Arah & jarak aktif.")
+else
+    print("❌ Tidak ada pumpkin ditemukan. Coba jalankan lagi saat map event aktif.")
+end
