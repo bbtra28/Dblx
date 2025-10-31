@@ -1,5 +1,5 @@
--- 🌐 Data Saver GUI (Low Graphic, Hemat Kuota, Draggable, Save Posisi)
--- 💻 Kompatibel semua executor: Arceus X, Delta, VegaX, Fluxus, Hydrogen, dll
+-- 🌐 Roblox Data Saver GUI (Auto Aktif + Draggable + Save Posisi + FPS/Ping Monitor)
+-- 💻 Kompatibel semua executor: Arceus X, Delta, VegaX, Fluxus, Hydrogen, Codex
 
 task.spawn(function()
     local Lighting = game:GetService("Lighting")
@@ -8,10 +8,12 @@ task.spawn(function()
     local SoundService = game:GetService("SoundService")
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local Stats = game:GetService("Stats")
     local LocalPlayer = Players.LocalPlayer
     local enabled = true
 
-    -- 📦 Simpan data posisi (pakai attribute agar bertahan per sesi)
+    -- 📦 Simpan posisi GUI antar sesi
     local function SavePos(x, y)
         pcall(function()
             LocalPlayer:SetAttribute("DataSaver_PosX", x)
@@ -29,13 +31,6 @@ task.spawn(function()
         end
     end
 
-    -- 🚀 Streaming agar cepat & hemat kuota
-    pcall(function()
-        Workspace:SetAttribute("StreamingEnabled", true)
-        Workspace.StreamingMinRadius = 10
-        Workspace.StreamingTargetRadius = 45
-    end)
-
     -- 🪟 GUI
     local gui = Instance.new("ScreenGui")
     gui.Name = "DataSaverGUI"
@@ -43,26 +38,36 @@ task.spawn(function()
     gui.Parent = game:GetService("CoreGui")
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 150, 0, 50)
+    frame.Size = UDim2.new(0, 180, 0, 80)
     frame.Position = LoadPos()
     frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    frame.BackgroundTransparency = 0.25
+    frame.BackgroundTransparency = 0.2
     frame.Active = true
     frame.Parent = gui
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 1, 0)
-    button.BackgroundTransparency = 1
-    button.TextColor3 = Color3.fromRGB(255,100,100)
-    button.Text = "🔴 Data Saver: ON"
-    button.Font = Enum.Font.SourceSansBold
-    button.TextScaled = true
-    button.Parent = frame
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0.5, 0)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "🔴 Data Saver: ON"
+    title.Font = Enum.Font.SourceSansBold
+    title.TextScaled = true
+    title.TextColor3 = Color3.fromRGB(255,100,100)
+    title.Parent = frame
 
-    -- ✅ Draggable fix + simpan posisi
+    local info = Instance.new("TextLabel")
+    info.Size = UDim2.new(1, 0, 0.5, 0)
+    info.Position = UDim2.new(0, 0, 0.5, 0)
+    info.BackgroundTransparency = 1
+    info.Text = "FPS: 0 | Ping: 0ms"
+    info.Font = Enum.Font.SourceSansBold
+    info.TextScaled = true
+    info.TextColor3 = Color3.fromRGB(255,255,255)
+    info.Parent = frame
+
+    -- ✅ Draggable GUI + save posisi
     local dragging, dragInput, dragStart, startPos
-
     local function update(input)
         local delta = input.Position - dragStart
         local newPos = UDim2.new(
@@ -100,7 +105,7 @@ task.spawn(function()
         end
     end)
 
-    -- ⚙️ Mode Hemat
+    -- ⚙️ Fungsi low graphic
     local function EnableLowGraphics()
         pcall(function()
             Lighting.GlobalShadows = false
@@ -115,8 +120,8 @@ task.spawn(function()
 
             for _, v in ipairs(Lighting:GetChildren()) do
                 if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or
-                v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or
-                v:IsA("DepthOfFieldEffect") then
+                   v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or
+                   v:IsA("DepthOfFieldEffect") then
                     v.Enabled = false
                 end
             end
@@ -149,48 +154,48 @@ task.spawn(function()
         end)
     end
 
-    -- 🌈 Mode Normal
     local function DisableLowGraphics()
         pcall(function()
             Lighting.GlobalShadows = true
             Lighting.Brightness = 2
             Lighting.EnvironmentDiffuseScale = 1
             Lighting.EnvironmentSpecularScale = 1
-
-            for _, s in ipairs(SoundService:GetDescendants()) do
-                if s:IsA("Sound") then s.Volume = 1 end
-            end
-
-            for _, obj in ipairs(Workspace:GetDescendants()) do
-                if obj:IsA("ParticleEmitter") or obj:IsA("Trail")
-                or obj:IsA("Smoke") or obj:IsA("Fire")
-                or obj:IsA("Sparkles") then
-                    obj.Enabled = true
-                elseif obj:IsA("Decal") or obj:IsA("Texture") then
-                    obj.Transparency = 0
-                elseif obj:IsA("BasePart") then
-                    obj.CastShadow = true
-                end
-            end
         end)
     end
 
-    -- 🔘 Toggle tombol
-    button.MouseButton1Click:Connect(function()
-        if enabled then
-            DisableLowGraphics()
-            button.Text = "🟢 Data Saver: OFF"
-            button.TextColor3 = Color3.fromRGB(100,255,100)
-        else
-            EnableLowGraphics()
-            button.Text = "🔴 Data Saver: ON"
-            button.TextColor3 = Color3.fromRGB(255,100,100)
+    -- 🔘 Toggle lewat klik judul
+    title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if enabled then
+                DisableLowGraphics()
+                title.Text = "🟢 Data Saver: OFF"
+                title.TextColor3 = Color3.fromRGB(100,255,100)
+            else
+                EnableLowGraphics()
+                title.Text = "🔴 Data Saver: ON"
+                title.TextColor3 = Color3.fromRGB(255,100,100)
+            end
+            enabled = not enabled
         end
-        enabled = not enabled
     end)
 
     -- 🚀 Auto aktif
     game.Loaded:Wait()
     task.wait(1)
     EnableLowGraphics()
+
+    -- 📊 FPS + Ping real-time
+    local lastUpdate = tick()
+    local frameCount = 0
+    RunService.RenderStepped:Connect(function()
+        frameCount += 1
+        if tick() - lastUpdate >= 1 then
+            local fps = frameCount / (tick() - lastUpdate)
+            frameCount = 0
+            lastUpdate = tick()
+
+            local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+            info.Text = string.format("FPS: %d | Ping: %dms", math.floor(fps), ping)
+        end
+    end)
 end)
