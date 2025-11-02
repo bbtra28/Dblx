@@ -1,11 +1,9 @@
--- 🌐 Roblox Data Saver GUI v2 (Stable + Auto Aktif + Draggable + Save Posisi + FPS/Ping Monitor)
+-- 🌐 Roblox Data Saver GUI v3 (Auto Aktif + Loading Render + Draggable + FPS/Ping lowercase + Fix)
 -- 💻 Kompatibel: Arceus X, Delta, VegaX, Fluxus, Hydrogen, Codex
--- ⚙️ Aman: Tidak ganggu fungsi utama game
 
 task.spawn(function()
     local Lighting = game:GetService("Lighting")
     local Workspace = game:GetService("Workspace")
-    local StarterGui = game:GetService("StarterGui")
     local SoundService = game:GetService("SoundService")
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -14,30 +12,15 @@ task.spawn(function()
     local LocalPlayer = Players.LocalPlayer
     local enabled = true
 
-    -- 📁 Simpan posisi GUI (pakai file jika bisa)
-    local savePath = "DataSaver_Pos.txt"
-
+    -- 📦 Simpan posisi GUI antar sesi
     local function SavePos(x, y)
         pcall(function()
-            if writefile then
-                writefile(savePath, tostring(x) .. "," .. tostring(y))
-            else
-                LocalPlayer:SetAttribute("DataSaver_PosX", x)
-                LocalPlayer:SetAttribute("DataSaver_PosY", y)
-            end
+            LocalPlayer:SetAttribute("DataSaver_PosX", x)
+            LocalPlayer:SetAttribute("DataSaver_PosY", y)
         end)
     end
 
     local function LoadPos()
-        pcall(function()
-            if isfile and isfile(savePath) then
-                local data = readfile(savePath)
-                local x, y = string.match(data, "([^,]+),([^,]+)")
-                if x and y then
-                    return UDim2.new(0, tonumber(x), 0, tonumber(y))
-                end
-            end
-        end)
         local x = LocalPlayer:GetAttribute("DataSaver_PosX")
         local y = LocalPlayer:GetAttribute("DataSaver_PosY")
         if x and y then
@@ -54,7 +37,7 @@ task.spawn(function()
     gui.Parent = game:GetService("CoreGui")
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 180, 0, 80)
+    frame.Size = UDim2.new(0, 200, 0, 90)
     frame.Position = LoadPos()
     frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     frame.BackgroundTransparency = 0.2
@@ -65,32 +48,27 @@ task.spawn(function()
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0.5, 0)
     title.BackgroundTransparency = 1
-    title.Text = "🔴 Data Saver: ON"
+    title.Text = "⚙️ rendering low graphic..."
     title.Font = Enum.Font.SourceSansBold
     title.TextScaled = true
-    title.TextColor3 = Color3.fromRGB(255,100,100)
+    title.TextColor3 = Color3.fromRGB(255,255,100)
     title.Parent = frame
 
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0.5, 0)
     info.Position = UDim2.new(0, 0, 0.5, 0)
     info.BackgroundTransparency = 1
-    info.Text = "FPS: 0 | Ping: 0ms"
+    info.Text = "fps: 0 | ping: 0ms"
     info.Font = Enum.Font.SourceSansBold
     info.TextScaled = true
     info.TextColor3 = Color3.fromRGB(255,255,255)
     info.Parent = frame
 
-    -- 🎮 Draggable + Simpan posisi
+    -- ✅ Draggable GUI + simpan posisi
     local dragging, dragInput, dragStart, startPos
     local function update(input)
         local delta = input.Position - dragStart
-        local newPos = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        local newPos = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
         frame.Position = newPos
         SavePos(newPos.X.Offset, newPos.Y.Offset)
     end
@@ -108,19 +86,13 @@ task.spawn(function()
         end
     end)
 
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
     UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             update(input)
         end
     end)
 
-    -- ⚙️ Mode Hemat (tidak ganggu GUI/game logic)
+    -- ⚙️ Fungsi low graphic
     local function EnableLowGraphics()
         pcall(function()
             Lighting.GlobalShadows = false
@@ -150,7 +122,9 @@ task.spawn(function()
                 or obj:IsA("Smoke") or obj:IsA("Fire")
                 or obj:IsA("Sparkles") then
                     obj.Enabled = false
-                elseif obj:IsA("BasePart") and not obj:FindFirstChildOfClass("Script") then
+                elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                    obj.Transparency = 0.8
+                elseif obj:IsA("BasePart") then
                     obj.Material = Enum.Material.SmoothPlastic
                     obj.CastShadow = false
                     obj.Reflectance = 0
@@ -167,45 +141,34 @@ task.spawn(function()
         end)
     end
 
-    local function DisableLowGraphics()
-        pcall(function()
-            Lighting.GlobalShadows = true
-            Lighting.Brightness = 2
-            Lighting.EnvironmentDiffuseScale = 1
-            Lighting.EnvironmentSpecularScale = 1
-            for _, s in ipairs(SoundService:GetDescendants()) do
-                if s:IsA("Sound") then s.Volume = 1 end
-            end
-        end)
-    end
-
-    -- 🔘 Toggle (klik judul)
+    -- 🔘 Toggle lewat klik judul
     title.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local click = Instance.new("Sound")
-            click.SoundId = "rbxassetid://12221967"
-            click.Volume = 0.5
-            click.Parent = frame
-            click:Play()
             if enabled then
-                DisableLowGraphics()
-                title.Text = "🟢 Data Saver: OFF"
+                enabled = false
+                title.Text = "🟢 data saver: off"
                 title.TextColor3 = Color3.fromRGB(100,255,100)
             else
+                enabled = true
                 EnableLowGraphics()
-                title.Text = "🔴 Data Saver: ON"
+                title.Text = "🔴 data saver: on"
                 title.TextColor3 = Color3.fromRGB(255,100,100)
             end
-            enabled = not enabled
         end
     end)
 
-    -- 🚀 Auto aktif + delay biar Lighting siap
-    game.Loaded:Wait()
-    task.wait(2)
-    EnableLowGraphics()
+    -- 🚀 Efek loading render
+    task.spawn(function()
+        for i = 1, 3 do
+            title.Text = "⚙️ rendering low graphic" .. string.rep(".", i)
+            task.wait(0.4)
+        end
+        EnableLowGraphics()
+        title.Text = "🔴 data saver: on"
+        title.TextColor3 = Color3.fromRGB(255,100,100)
+    end)
 
-    -- 📊 FPS + Ping Monitor
+    -- 📊 FPS + Ping real-time (fix tanpa error)
     local lastUpdate = tick()
     local frameCount = 0
     RunService.RenderStepped:Connect(function()
@@ -218,7 +181,7 @@ task.spawn(function()
             local pingStat = Stats.Network:FindFirstChild("ServerStatsItem") and Stats.Network.ServerStatsItem:FindFirstChild("Data Ping")
             local ping = pingStat and math.floor(pingStat:GetValue()) or 0
 
-            info.Text = string.format("FPS: %d | Ping: %dms", math.floor(fps), ping)
+            info.Text = string.format("fps: %d | ping: %dms", math.floor(fps), ping)
         end
     end)
 end)
