@@ -1,42 +1,88 @@
--- 📱 Script: Deteksi nama part saat diklik
--- 💻 Kompatibel HP executor (Arceus X, Delta, VegaX, Fluxus, dll)
+-- 🌐 Auto Teleport ke Part bernama "root" + GUI On/Off
+-- 💻 Kompatibel: Arceus X, Delta, Fluxus, Hydrogen, VegaX
+-- 📱 Support HP & PC
 
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
+-- Buat GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local Toggle = Instance.new("TextButton")
 
--- Buat GUI kecil untuk menampilkan info klik
-local gui = Instance.new("ScreenGui", game.CoreGui)
-local label = Instance.new("TextLabel", gui)
+ScreenGui.Name = "RootTeleportGUI"
+ScreenGui.Parent = game.CoreGui
 
-label.Size = UDim2.new(0, 300, 0, 50)
-label.Position = UDim2.new(0.5, -150, 0.9, 0)
-label.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-label.TextColor3 = Color3.fromRGB(0, 255, 0)
-label.Font = Enum.Font.SourceSansBold
-label.TextScaled = true
-label.Text = "Klik objek untuk deteksi..."
-label.Visible = true
+Frame.Name = "MainFrame"
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Size = UDim2.new(0, 180, 0, 80)
+Frame.Position = UDim2.new(0.05, 0, 0.4, 0)
+Frame.Active = true
+Frame.Draggable = true
 
--- Fungsi saat klik
-mouse.Button1Down:Connect(function()
-    local target = mouse.Target
-    if target then
-        local name = target.Name
-        local class = target.ClassName
-        label.Text = "Nama: " .. name .. " (" .. class .. ")"
-        print("✅ Kamu klik:", name, "Class:", class, "Parent:", target.Parent.Name)
+Title.Parent = Frame
+Title.Text = "Auto Root Teleport"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
 
-        -- Contoh tambahan: highlight objek yang diklik
-        local highlight = Instance.new("Highlight")
-        highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.Parent = target
+Toggle.Parent = Frame
+Toggle.Text = "ON"
+Toggle.Size = UDim2.new(1, 0, 0, 40)
+Toggle.Position = UDim2.new(0, 0, 0.45, 0)
+Toggle.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.Font = Enum.Font.SourceSansBold
+Toggle.TextSize = 20
 
-        task.delay(1.5, function()
-            highlight:Destroy()
-        end)
+-- Variabel
+local enabled = false
+local teleportDelay = 1.5 -- jeda antar teleport (detik)
+
+-- Fungsi cari semua part bernama "root"
+local function getAllRoots()
+    local roots = {}
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name == "root" then
+            table.insert(roots, v)
+        end
+    end
+    return roots
+end
+
+-- Fungsi auto teleport ke root berikutnya
+task.spawn(function()
+    while task.wait(teleportDelay) do
+        if enabled then
+            local char = game.Players.LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local roots = getAllRoots()
+                table.sort(roots, function(a, b)
+                    return (a.Position - hrp.Position).Magnitude < (b.Position - hrp.Position).Magnitude
+                end)
+                for _, root in pairs(roots) do
+                    if enabled then
+                        hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
+                        task.wait(teleportDelay)
+                    else
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Tombol on/off
+Toggle.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    if enabled then
+        Toggle.Text = "OFF"
+        Toggle.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
     else
-        label.Text = "❌ Tidak ada objek di bawah kursor"
+        Toggle.Text = "ON"
+        Toggle.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
     end
 end)
