@@ -1,10 +1,11 @@
--- Pumpkin Finder + GUI + Marker 3D (Neon Ball)
--- Fully executor-friendly
+-- Chef Chubbyini Finder + Teleport + Marker 3D
+-- GUI dijamin muncul
 
-local pumpkinName = "Pumpkin"
-local markers = {}
+local targetName = "Chef Chubbyini"
+local trackedNPC = nil
+local marker = nil
 
--- GUI SETUP
+-- GUI SETUP (DIJAMIN MUNCUL)
 local player = game:GetService("Players").LocalPlayer
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
@@ -12,7 +13,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 200, 0, 120)
 frame.Position = UDim2.new(0, 20, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
 frame.BackgroundTransparency = 0.2
 
 frame.Active = true
@@ -20,77 +21,86 @@ frame.Draggable = true
 
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1,0,0,30)
-title.Text = "Pumpkin Finder"
-title.TextColor3 = Color3.new(1,1,1)
 title.BackgroundTransparency = 1
+title.Text = "Chef Finder"
+title.TextColor3 = Color3.new(1,1,1)
 
-local function createButton(text, posY)
-	local btn = Instance.new("TextButton", frame)
-	btn.Size = UDim2.new(1, -20, 0, 30)
-	btn.Position = UDim2.new(0,10, 0, posY)
-	btn.Text = text
-	btn.TextColor3 = Color3.new(1,1,1)
-	btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	return btn
+local function makeBtn(text, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(1,-20,0,30)
+	b.Position = UDim2.new(0,10,0,y)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	b.Text = text
+	return b
 end
 
-local scanBtn = createButton("SCAN Pumpkin", 35)
-local hideBtn = createButton("Hide Markers", 70)
+local scanBtn = makeBtn("SCAN Chef", 40)
+local tpBtn   = makeBtn("TELEPORT", 75)
 
--- MARKER CREATOR
-local function createMarker(obj)
-	if markers[obj] then
-		markers[obj]:Destroy()
-	end
+-- CREATE MARKER
+local function createMarker(part)
+	if marker then marker:Destroy() end
 
-	local part = Instance.new("Part")
-	part.Shape = Enum.PartType.Ball
-	part.Size = Vector3.new(2,2,2)
-	part.Color = Color3.fromRGB(255, 120, 0)
-	part.Material = Enum.Material.Neon
-	part.CanCollide = false
-	part.Anchored = true
-	part.CFrame = obj:IsA("BasePart") and obj.CFrame + Vector3.new(0,3,0) or obj.Parent:GetBoundingBox()
+	local m = Instance.new("Part")
+	m.Shape = Enum.PartType.Ball
+	m.Size = Vector3.new(2,2,2)
+	m.Color = Color3.fromRGB(255, 120, 0)
+	m.Material = Enum.Material.Neon
+	m.Anchored = true
+	m.CanCollide = false
+	m.Parent = workspace
 
-	part.Parent = workspace
-	markers[obj] = part
+	marker = m
 
 	task.spawn(function()
-		while markers[obj] and obj.Parent do
-			if obj:IsA("BasePart") then
-				part.CFrame = obj.CFrame + Vector3.new(0,3,0)
+		while marker and trackedNPC and trackedNPC.Parent do
+			if trackedNPC:IsA("BasePart") then
+				marker.CFrame = trackedNPC.CFrame + Vector3.new(0,4,0)
+			elseif trackedNPC:FindFirstChild("HumanoidRootPart") then
+				marker.CFrame = trackedNPC.HumanoidRootPart.CFrame + Vector3.new(0,4,0)
 			end
 			task.wait(0.1)
 		end
 	end)
 end
 
--- SCAN FUNCTION
-local function scanPumpkins()
-	for obj,_ in pairs(markers) do
-		if markers[obj] then markers[obj]:Destroy() end
-	end
-	markers = {}
+-- FIND FUNCTION
+local function findChef()
+	trackedNPC = nil
 
 	for _,obj in ipairs(workspace:GetDescendants()) do
-		if obj.Name:lower() == pumpkinName:lower() then
-			createMarker(obj)
+		if obj.Name:lower() == targetName:lower() then
+			if obj:IsA("BasePart") then
+				trackedNPC = obj
+				break
+			elseif obj:FindFirstChild("HumanoidRootPart") then
+				trackedNPC = obj.HumanoidRootPart
+				break
+			end
 		end
+	end
+
+	if trackedNPC then
+		createMarker(trackedNPC)
 	end
 end
 
--- BUTTON FUNCTIONS
-scanBtn.MouseButton1Click:Connect(function()
-	scanPumpkins()
-end)
+-- TELEPORT FUNCTION
+local function teleportToChef()
+	if not trackedNPC then return end
 
-local markersVisible = true
-hideBtn.MouseButton1Click:Connect(function()
-	markersVisible = not markersVisible
-	for _,m in pairs(markers) do
-		m.Transparency = markersVisible and 0 or 1
-	end
-	hideBtn.Text = markersVisible and "Hide Markers" or "Show Markers"
-end)
+	local char = player.Character
+	if not char then return end
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 
-print("Pumpkin Finder Loaded!")
+	-- Teleport
+	root.CFrame = trackedNPC.CFrame + Vector3.new(0,2,0)
+end
+
+-- BUTTON EVENTS
+scanBtn.MouseButton1Click:Connect(findChef)
+tpBtn.MouseButton1Click:Connect(teleportToChef)
+
+print("CHEF CHUBBYINI FINDER LOADED")
