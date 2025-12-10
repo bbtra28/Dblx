@@ -1,140 +1,107 @@
--- ==========================================
--- FIND NPC: Pantry Chef Chubbyini (Client-Side)
--- By ChatGPT
--- ==========================================
+--[[  
+   Finder + ESP + Auto Teleport + GUI
+   Target: Chef Chubbeloni
+   Client-side (Executor Script)
+]]--
 
-local TARGET_NAMES = {
-    "Pantry Chef Chubbyini",
-    "Chef Chubbyini",
-    "Chubbyini",
-    "PantryChef",
-}
-
+local TARGET_NAME = "Chef Chubbeloni"
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
+local lp = Players.LocalPlayer
 
--- UI
-local CoreGui = game:GetService("CoreGui")
-local gui = Instance.new("ScreenGui", CoreGui)
-gui.Name = "FindChubbyini_GUI"
-gui.ResetOnSpawn = false
+--===== GUI =====--
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "ChubFinderGUI"
 
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 240, 0, 130)
-main.Position = UDim2.new(0.02, 0, 0.3, 0)
-main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-main.BackgroundTransparency = 0.15
-main.Active = true
-main.Draggable = true
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 200, 0, 60)
+Frame.Position = UDim2.new(0.1, 0, 0.1, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Frame.Active = true
+Frame.Draggable = true
 
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "Find Pantry Chef Chubbyini"
-title.TextColor3 = Color3.fromRGB(255,255,255)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 15
+local UIStroke = Instance.new("UIStroke", Frame)
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(255,120,0)
 
-local status = Instance.new("TextLabel", main)
-status.Size = UDim2.new(1, -10, 0, 25)
-status.Position = UDim2.new(0, 5, 0, 33)
-status.Text = "Status: Searching..."
-status.TextColor3 = Color3.fromRGB(200,200,200)
-status.BackgroundTransparency = 1
-status.Font = Enum.Font.SourceSans
-status.TextSize = 13
+local ToggleBtn = Instance.new("TextButton", Frame)
+ToggleBtn.Size = UDim2.new(1,0,1,0)
+ToggleBtn.BackgroundTransparency = 1
+ToggleBtn.Text = "CHUBBELONI FINDER: OFF"
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextColor3 = Color3.fromRGB(255,120,0)
+ToggleBtn.TextScaled = true
 
-local tp = Instance.new("TextButton", main)
-tp.Size = UDim2.new(1, -10, 0, 35)
-tp.Position = UDim2.new(0, 5, 0, 70)
-tp.Text = "Teleport to NPC"
-tp.Font = Enum.Font.SourceSansBold
-tp.TextSize = 14
-tp.BackgroundColor3 = Color3.fromRGB(40,40,40)
-tp.TextColor3 = Color3.fromRGB(255,255,255)
+local enabled = false
 
-local foundNPC = nil
+ToggleBtn.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    ToggleBtn.Text = enabled and "CHUBBELONI FINDER: ON" or "CHUBBELONI FINDER: OFF"
+end)
 
--- Function: check if instance is the target
-local function isTarget(objName)
-    local lower = string.lower(objName)
-    for _, n in ipairs(TARGET_NAMES) do
-        if string.find(lower, string.lower(n), 1, true) then
-            return true
+--===== ESP MAKER =====--
+local function clearESP(model)
+    if model:FindFirstChild("ChubESP") then
+        model.ChubESP:Destroy()
+    end
+end
+
+local function makeESP(model)
+    clearESP(model)
+    local hrp = model:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local folder = Instance.new("Folder", model)
+    folder.Name = "ChubESP"
+
+    local hl = Instance.new("Highlight", folder)
+    hl.Adornee = model
+    hl.FillTransparency = 1
+    hl.OutlineColor = Color3.fromRGB(255,120,0)
+    hl.OutlineTransparency = 0
+
+    local bill = Instance.new("BillboardGui", folder)
+    bill.Adornee = hrp
+    bill.Size = UDim2.new(0,150,0,35)
+    bill.AlwaysOnTop = true
+
+    local txt = Instance.new("TextLabel", bill)
+    txt.Size = UDim2.new(1,0,1,0)
+    txt.BackgroundTransparency = 1
+    txt.Text = "CHEF CHUBBELONI"
+    txt.Font = Enum.Font.GothamBold
+    txt.TextScaled = true
+    txt.TextColor3 = Color3.fromRGB(255,120,0)
+end
+
+--===== CARI NPC =====--
+local function findChub()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name:lower():find(TARGET_NAME:lower()) then
+            return obj
         end
     end
-    return false
+    return nil
 end
 
--- Function: tag NPC
-local function addMarker(part)
-    if part:FindFirstChild("ChubbyiniMarker") then return end
+--===== LOOP UTAMA =====--
+task.spawn(function()
+    while true do
+        if enabled then
+            local npc = findChub()
+            if npc then
+                makeESP(npc)
 
-    local b = Instance.new("BillboardGui", part)
-    b.Name = "ChubbyiniMarker"
-    b.Adornee = part
-    b.Size = UDim2.new(0, 120, 0, 35)
-    b.AlwaysOnTop = true
-
-    local label = Instance.new("TextLabel", b)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = "⬆ Pantry Chef Chubbyini"
-    label.TextColor3 = Color3.fromRGB(255,255,0)
-    label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 14
-end
-
--- Scan workspace for NPC
-local function scan()
-    foundNPC = nil
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart") then
-            if isTarget(obj.Name) then
-                -- Find a root part
-                local root = nil
-                if obj:IsA("Model") then
-                    root = obj:FindFirstChild("HumanoidRootPart")
-                        or obj:FindFirstChild("Head")
-                        or obj:FindFirstChildWhichIsA("BasePart")
-                elseif obj:IsA("BasePart") then
-                    root = obj
-                end
-
-                if root then
-                    foundNPC = root
-                    addMarker(root)
-                    break
+                -- Auto teleport player ke NPC
+                local hrp = npc:FindFirstChild("HumanoidRootPart")
+                local myChar = lp.Character
+                if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                    myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(2,0,0)
                 end
             end
         end
-    end
-
-    if foundNPC then
-        status.Text = "Status: FOUND!"
-    else
-        status.Text = "Status: Not found"
-    end
-end
-
-scan()
-
--- Teleport button
-tp.MouseButton1Click:Connect(function()
-    if not foundNPC then
-        status.Text = "Status: NPC not found!"
-        return
-    end
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = foundNPC.CFrame + Vector3.new(0, 3, 0)
-        status.Text = "Teleported ✔"
-    else
-        status.Text = "Character not loaded!"
+        task.wait(1)
     end
 end)
 
--- Auto search every 1.5s
-while task.wait(1.5) do
-    scan()
-end
+print("Chubbeloni Finder + Auto TP Loaded!")
