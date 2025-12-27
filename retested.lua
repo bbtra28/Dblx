@@ -1,7 +1,7 @@
 -- ========= CONFIG =========
-getgenv().AutoTP = false
-getgenv().TPDelay = 0.4
-getgenv().MaxFirework = 49
+local AutoTP = false
+local TPDelay = 0.4
+local MaxFirework = 49
 -- ==========================
 
 local Players = game:GetService("Players")
@@ -59,8 +59,9 @@ showBtn.Draggable = true
 Instance.new("UICorner", showBtn).CornerRadius = UDim.new(1,0)
 
 -- ========= FIREWORK PATH =========
-local ScriptedMap = workspace:WaitForChild("Scriptedmap")
-local SpawnedFW  = ScriptedMap:WaitForChild("SpawnedFireworks")
+local SpawnedFW =
+    workspace:WaitForChild("Scriptedmap")
+             :WaitForChild("SpawnedFireworks")
 
 local currentIndex = 1
 
@@ -81,8 +82,8 @@ end
 
 -- ========= BUTTON EVENTS =========
 tpBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoTP = not getgenv().AutoTP
-    tpBtn.Text = "Auto TP : " .. (getgenv().AutoTP and "ON" or "OFF")
+    AutoTP = not AutoTP
+    tpBtn.Text = "Auto TP : " .. (AutoTP and "ON" or "OFF")
 end)
 
 hideBtn.MouseButton1Click:Connect(function()
@@ -97,25 +98,28 @@ end)
 
 -- ========= AUTO TP LOOP =========
 task.spawn(function()
-    while task.wait(getgenv().TPDelay) do
-        if not getgenv().AutoTP then continue end
+    while true do
+        task.wait(TPDelay)
 
-        local char = lp.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
-
-        local part = getFireworkPart(currentIndex)
-
-        if part then
-            char.HumanoidRootPart.CFrame =
-                part.CFrame * CFrame.new(0, 0, -4)
+        if not AutoTP then
+            continue
         end
 
-        -- Naik index
+        local char = lp.Character
+        if not char then continue end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
+
+        local part = getFireworkPart(currentIndex)
+        if part then
+            hrp.CFrame = part.CFrame * CFrame.new(0, 0, -4)
+        end
+
         currentIndex += 1
-        if currentIndex > getgenv().MaxFirework then
+        if currentIndex > MaxFirework then
             currentIndex = 1
         end
     end
 end)
 
-print("✅ Auto TP Firework 1-49 Loaded")
+print("✅ FIXED Auto TP Firework — ON/OFF WORKING")
