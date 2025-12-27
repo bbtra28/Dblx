@@ -1,120 +1,106 @@
--- 📱 Tap Part untuk Nempel (Mobile Fixed Version)
--- by GPT-5
+-- ================= CONFIG =================
+getgenv().TeleportFirework = false
+getgenv().TeleportDelay = 0.7
+getgenv().AutoClick = true
+getgenv().ClickDelay = 0.5
 
+-- ================= SERVICES =================
 local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
 
--- ===== GUI SETUP =====
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "MobileAttachGUI"
+local function getChar()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local Character = getChar()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    HRP = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- ================= GUI =================
+local gui = Instance.new("ScreenGui")
+gui.Name = "FireworkTP_GUI"
+gui.Parent = game.CoreGui
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 280, 0, 160)
-frame.Position = UDim2.new(0.35, 0, 0.25, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 200, 0, 140)
+frame.Position = UDim2.new(0.05, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
 frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-title.Text = "📱 Tap Part untuk Nempel"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
+title.Text = "Firework Teleport"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextScaled = true
 
-local info = Instance.new("TextLabel", frame)
-info.Size = UDim2.new(1, -10, 0, 50)
-info.Position = UDim2.new(0, 5, 0, 40)
-info.BackgroundTransparency = 1
-info.TextWrapped = true
-info.Text = "👆 Ketuk part di layar untuk menempelkannya.\n🗙 Gunakan tombol bawah untuk lepas."
-info.TextColor3 = Color3.fromRGB(220, 220, 220)
-info.Font = Enum.Font.SourceSans
-info.TextSize = 16
+local toggle = Instance.new("TextButton", frame)
+toggle.Size = UDim2.new(0.8, 0, 0, 40)
+toggle.Position = UDim2.new(0.1, 0, 0.35, 0)
+toggle.Text = "OFF"
+toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+toggle.TextColor3 = Color3.fromRGB(255,255,255)
+toggle.TextScaled = true
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 10)
 
-local attachInfo = Instance.new("TextLabel", frame)
-attachInfo.Size = UDim2.new(1, -10, 0, 25)
-attachInfo.Position = UDim2.new(0, 5, 0, 95)
-attachInfo.BackgroundTransparency = 1
-attachInfo.TextColor3 = Color3.fromRGB(180, 255, 180)
-attachInfo.Font = Enum.Font.SourceSansBold
-attachInfo.TextSize = 16
-attachInfo.Text = "Tidak ada part menempel"
+local status = Instance.new("TextLabel", frame)
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Position = UDim2.new(0, 0, 0.75, 0)
+status.Text = "Auto Click: ON"
+status.BackgroundTransparency = 1
+status.TextColor3 = Color3.fromRGB(0,255,0)
+status.TextScaled = true
 
-local detachBtn = Instance.new("TextButton", frame)
-detachBtn.Size = UDim2.new(1, -20, 0, 35)
-detachBtn.Position = UDim2.new(0, 10, 1, -45)
-detachBtn.Text = "🗙 Lepaskan Part"
-detachBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-detachBtn.TextColor3 = Color3.new(1, 1, 1)
-detachBtn.Font = Enum.Font.SourceSansBold
-detachBtn.TextSize = 16
-
--- ===== SHOW / HIDE BUTTON =====
-local toggle = Instance.new("TextButton", gui)
-toggle.Size = UDim2.new(0, 160, 0, 35)
-toggle.Position = UDim2.new(0, 20, 0, 20)
-toggle.Text = "📁 Hide Attach GUI"
-toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-toggle.TextColor3 = Color3.new(1, 1, 1)
-toggle.Font = Enum.Font.SourceSansBold
-toggle.TextSize = 16
-
-local visible = true
 toggle.MouseButton1Click:Connect(function()
-	visible = not visible
-	frame.Visible = visible
-	toggle.Text = visible and "📁 Hide Attach GUI" or "📂 Show Attach GUI"
+    getgenv().TeleportFirework = not getgenv().TeleportFirework
+    if getgenv().TeleportFirework then
+        toggle.Text = "ON"
+        toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        toggle.Text = "OFF"
+        toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+    end
 end)
 
--- ===== ATTACH SYSTEM =====
-local weld, attachedPart
-
-local function attachPart(part)
-	local char = LocalPlayer.Character
-	if not char then return end
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp or not part or not part:IsA("BasePart") then return end
-
-	if weld then weld:Destroy() end
-
-	part.Anchored = false
-	weld = Instance.new("WeldConstraint")
-	weld.Part0 = hrp
-	weld.Part1 = part
-	weld.Parent = part
-	attachedPart = part
-
-	attachInfo.Text = "📦 Nempel: " .. part.Name
-	attachInfo.TextColor3 = Color3.fromRGB(100, 255, 100)
-end
-
-detachBtn.MouseButton1Click:Connect(function()
-	if weld then
-		weld:Destroy()
-		weld = nil
-	end
-	attachedPart = nil
-	attachInfo.Text = "Tidak ada part menempel"
-	attachInfo.TextColor3 = Color3.fromRGB(180, 255, 180)
+-- ================= AUTO CLICK =================
+task.spawn(function()
+    while task.wait(getgenv().ClickDelay) do
+        if getgenv().TeleportFirework and getgenv().AutoClick then
+            pcall(function()
+                VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(0.05)
+                VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+        end
+    end
 end)
 
--- ===== MOBILE TAP RAYCAST FIX =====
-UserInputService.TouchTap:Connect(function(touchPositions)
-	local screenPos = touchPositions[1]
-	if not screenPos then return end
+-- ================= TELEPORT LOOP =================
+task.spawn(function()
+    while task.wait(0.2) do
+        if getgenv().TeleportFirework then
+            for i = 1, 50 do
+                if not getgenv().TeleportFirework then break end
 
-	-- Buat ray dari kamera ke arah tap
-	local ray = Camera:ViewportPointToRay(screenPos.X, screenPos.Y)
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-	local result = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
-	if result and result.Instance and result.Instance:IsA("BasePart") then
-		attachPart(result.Instance)
-	end
+                local sm = workspace:FindFirstChild("ScriptedMap")
+                if sm and sm:FindFirstChild("SpawnedFireworks") then
+                    local fw = sm.SpawnedFireworks:FindFirstChild(tostring(i))
+                    if fw and fw:FindFirstChild("Rocket") then
+                        local part = fw.Rocket:FindFirstChild("MainColor")
+                        if part and part:IsA("BasePart") then
+                            HRP.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(getgenv().TeleportDelay)
+                        end
+                    end
+                end
+            end
+        end
+    end
 end)
