@@ -7,104 +7,117 @@ getgenv().ClickDelay = 0.5
 
 -- ================= SERVICES =================
 local Players = game:GetService("Players")
-local VirtualUser = game:GetService("VirtualUser")
-local Player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
 -- ================= CHARACTER =================
-local Character = Player.Character or Player.CharacterAdded:Wait()
+local function getChar()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local Character = getChar()
 local HRP = Character:WaitForChild("HumanoidRootPart")
 
-Player.CharacterAdded:Connect(function(char)
+LocalPlayer.CharacterAdded:Connect(function(char)
     Character = char
     HRP = char:WaitForChild("HumanoidRootPart")
 end)
 
--- ================= DRAWING UI =================
-local Drawing = Drawing
-local UIS = game:GetService("UserInputService")
+-- ================= GUI =================
+local gui = Instance.new("ScreenGui")
+gui.Name = "FireworkTP_GUI"
+gui.Parent = game.CoreGui
 
-local UI = {
-    Open = true,
-    X = 100,
-    Y = 200,
-    W = 240,
-    H = 210
-}
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 220)
+frame.Position = UDim2.new(0.05, 0, 0.35, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-local function box(x,y,w,h)
-    local b = Drawing.new("Square")
-    b.Position = Vector2.new(x,y)
-    b.Size = Vector2.new(w,h)
-    b.Color = Color3.fromRGB(25,25,25)
-    b.Filled = true
-    b.Thickness = 1
-    return b
-end
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Firework TP FINAL"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextScaled = true
 
-local function text(txt,x,y)
-    local t = Drawing.new("Text")
-    t.Text = txt
-    t.Position = Vector2.new(x,y)
-    t.Size = 18
-    t.Color = Color3.new(1,1,1)
-    t.Outline = true
-    return t
-end
+-- ================= TP TOGGLE =================
+local tpBtn = Instance.new("TextButton", frame)
+tpBtn.Size = UDim2.new(0.8, 0, 0, 40)
+tpBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
+tpBtn.Text = "TP : OFF"
+tpBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
+tpBtn.TextColor3 = Color3.fromRGB(255,255,255)
+tpBtn.TextScaled = true
+Instance.new("UICorner", tpBtn)
 
-local bg = box(UI.X,UI.Y,UI.W,UI.H)
-local title = text("🔥 FIREWORK FARM (DELTA)", UI.X+15, UI.Y+10)
-
-local tpTxt = text("Teleport : OFF", UI.X+15, UI.Y+50)
-local acTxt = text("AutoClick : OFF", UI.X+15, UI.Y+80)
-local tpDelayTxt = text("TP Delay : "..getgenv().TeleportDelay, UI.X+15, UI.Y+115)
-local acDelayTxt = text("Click Delay : "..getgenv().ClickDelay, UI.X+15, UI.Y+145)
-local closeTxt = text("[ TAP TO CLOSE ]", UI.X+15, UI.Y+175)
-
--- ================= INPUT =================
-UIS.InputBegan:Connect(function(input)
-    if input.UserInputType ~= Enum.UserInputType.Touch then return end
-    local pos = input.Position
-
-    local function hit(x,y,w,h)
-        return pos.X >= x and pos.X <= x+w and pos.Y >= y and pos.Y <= y+h
-    end
-
-    if hit(UI.X,UI.Y+45,UI.W,25) then
-        getgenv().TeleportFirework = not getgenv().TeleportFirework
-        tpTxt.Text = "Teleport : "..(getgenv().TeleportFirework and "ON" or "OFF")
-    elseif hit(UI.X,UI.Y+75,UI.W,25) then
-        getgenv().AutoClick = not getgenv().AutoClick
-        acTxt.Text = "AutoClick : "..(getgenv().AutoClick and "ON" or "OFF")
-    elseif hit(UI.X,UI.Y+105,UI.W,25) then
-        getgenv().TeleportDelay = math.max(0.1, getgenv().TeleportDelay - 0.1)
-        tpDelayTxt.Text = "TP Delay : "..string.format("%.1f", getgenv().TeleportDelay)
-    elseif hit(UI.X,UI.Y+135,UI.W,25) then
-        getgenv().ClickDelay = math.max(0.1, getgenv().ClickDelay - 0.1)
-        acDelayTxt.Text = "Click Delay : "..string.format("%.1f", getgenv().ClickDelay)
-    elseif hit(UI.X,UI.Y+170,UI.W,25) then
-        bg:Remove()
-        title:Remove()
-        tpTxt:Remove()
-        acTxt:Remove()
-        tpDelayTxt:Remove()
-        acDelayTxt:Remove()
-        closeTxt:Remove()
+tpBtn.MouseButton1Click:Connect(function()
+    getgenv().TeleportFirework = not getgenv().TeleportFirework
+    if getgenv().TeleportFirework then
+        tpBtn.Text = "TP : ON"
+        tpBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        tpBtn.Text = "TP : OFF"
+        tpBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
     end
 end)
 
--- ================= TELEPORT =================
+-- ================= AUTO CLICK TOGGLE =================
+local acBtn = Instance.new("TextButton", frame)
+acBtn.Size = UDim2.new(0.8, 0, 0, 40)
+acBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+acBtn.Text = "AUTO CLICK : OFF"
+acBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
+acBtn.TextColor3 = Color3.fromRGB(255,255,255)
+acBtn.TextScaled = true
+Instance.new("UICorner", acBtn)
+
+acBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoClick = not getgenv().AutoClick
+    if getgenv().AutoClick then
+        acBtn.Text = "AUTO CLICK : ON"
+        acBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        acBtn.Text = "AUTO CLICK : OFF"
+        acBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
+    end
+end)
+
+-- ================= CLICK DELAY INPUT =================
+local delayBox = Instance.new("TextBox", frame)
+delayBox.Size = UDim2.new(0.8, 0, 0, 35)
+delayBox.Position = UDim2.new(0.1, 0, 0.75, 0)
+delayBox.PlaceholderText = "Click Delay (ex: 0.5)"
+delayBox.Text = tostring(getgenv().ClickDelay)
+delayBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
+delayBox.TextColor3 = Color3.fromRGB(255,255,255)
+delayBox.TextScaled = true
+Instance.new("UICorner", delayBox)
+
+delayBox.FocusLost:Connect(function()
+    local v = tonumber(delayBox.Text)
+    if v and v > 0 then
+        getgenv().ClickDelay = v
+    else
+        delayBox.Text = tostring(getgenv().ClickDelay)
+    end
+end)
+
+-- ================= TELEPORT LOOP =================
 task.spawn(function()
     while task.wait(0.2) do
         if getgenv().TeleportFirework then
             for i = 1, 50 do
                 if not getgenv().TeleportFirework then break end
 
-                local map = workspace:FindFirstChild("ScriptedMap")
-                if map and map:FindFirstChild("SpawnedFireworks") then
-                    local fw = map.SpawnedFireworks:FindFirstChild(tostring(i))
+                local sm = workspace:FindFirstChild("ScriptedMap")
+                if sm and sm:FindFirstChild("SpawnedFireworks") then
+                    local fw = sm.SpawnedFireworks:FindFirstChild(tostring(i))
                     if fw and fw:FindFirstChild("Rocket") then
                         local part = fw.Rocket:FindFirstChild("MainColor")
-                        if part then
+                        if part and part:IsA("BasePart") then
                             HRP.CFrame = part.CFrame + Vector3.new(0,3,0)
                             task.wait(getgenv().TeleportDelay)
                         end
@@ -115,16 +128,14 @@ task.spawn(function()
     end
 end)
 
--- ================= AUTO CLICK =================
+-- ================= AUTO CLICK LOOP (MOUSE) =================
 task.spawn(function()
     while task.wait() do
         if getgenv().AutoClick then
-            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            task.wait(0.05)
-            VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            pcall(function()
+                Mouse:Click()
+            end)
             task.wait(getgenv().ClickDelay)
-        else
-            task.wait(0.2)
         end
     end
 end)
