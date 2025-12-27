@@ -1,62 +1,82 @@
--- ===== CONFIG =====
-getgenv().AutoFarm = false
-getgenv().Delay = 0.3
+-- ================= CONFIG =================
+getgenv().TeleportFirework = false
+getgenv().TeleportDelay = 0.7
 
--- ===== SERVICES =====
+-- ================= SERVICES =================
 local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 
 local function getChar()
-    return Player.Character or Player.CharacterAdded:Wait()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
 
--- ===== GUI =====
+local Character = getChar()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    HRP = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- ================= GUI =================
 local gui = Instance.new("ScreenGui")
-gui.Name = "FireworkMobileGUI"
-gui.ResetOnSpawn = false
-gui.Parent = Player:WaitForChild("PlayerGui")
+gui.Name = "FireworkTP_GUI"
+gui.Parent = game.CoreGui
 
-local btn = Instance.new("TextButton", gui)
-btn.Size = UDim2.new(0,220,0,50)
-btn.Position = UDim2.new(0.5,-110,0.8,0)
-btn.BackgroundColor3 = Color3.fromRGB(180,0,0)
-btn.Text = "AUTO FIREWORK : OFF"
-btn.TextColor3 = Color3.new(1,1,1)
-btn.TextScaled = true
-btn.BorderSizePixel = 0
-Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 200, 0, 120)
+frame.Position = UDim2.new(0.05, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
 
--- ===== BUTTON =====
-btn.Activated:Connect(function()
-    getgenv().AutoFarm = not getgenv().AutoFarm
-    if getgenv().AutoFarm then
-        btn.Text = "AUTO FIREWORK : ON"
-        btn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Firework Teleport"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextScaled = true
+
+local toggle = Instance.new("TextButton", frame)
+toggle.Size = UDim2.new(0.8, 0, 0, 40)
+toggle.Position = UDim2.new(0.1, 0, 0.45, 0)
+toggle.Text = "OFF"
+toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+toggle.TextColor3 = Color3.fromRGB(255,255,255)
+toggle.TextScaled = true
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 10)
+
+toggle.MouseButton1Click:Connect(function()
+    getgenv().TeleportFirework = not getgenv().TeleportFirework
+    if getgenv().TeleportFirework then
+        toggle.Text = "ON"
+        toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
     else
-        btn.Text = "AUTO FIREWORK : OFF"
-        btn.BackgroundColor3 = Color3.fromRGB(180,0,0)
+        toggle.Text = "OFF"
+        toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
     end
 end)
 
--- ===== MAIN LOOP =====
+-- ================= TELEPORT LOOP =================
 task.spawn(function()
-    while task.wait() do
-        if getgenv().AutoFarm then
-            local char = getChar()
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local tool = char:FindFirstChildOfClass("Tool")
+    while task.wait(0.2) do
+        if getgenv().TeleportFirework then
+            for i = 1, 50 do
+                if not getgenv().TeleportFirework then break end
 
-            local fw = workspace:FindFirstChild("Fireworks")
-            if hrp and tool and fw then
-                local rocket = fw:FindFirstChild("Rocket", true)
-                if rocket and rocket:IsA("BasePart") then
-                    -- TELEPORT
-                    hrp.CFrame = rocket.CFrame * CFrame.new(0,0,-3)
-                    task.wait(0.15)
-
-                    -- HIT (MOBILE)
-                    tool:Activate()
-                    task.wait(getgenv().Delay)
+                local sm = workspace:FindFirstChild("ScriptedMap")
+                if sm and sm:FindFirstChild("SpawnedFireworks") then
+                    local fw = sm.SpawnedFireworks:FindFirstChild(tostring(i))
+                    if fw and fw:FindFirstChild("Rocket") then
+                        local part = fw.Rocket:FindFirstChild("MainColor")
+                        if part and part:IsA("BasePart") then
+                            HRP.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(getgenv().TeleportDelay)
+                        end
+                    end
                 end
             end
         end
