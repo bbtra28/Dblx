@@ -9,29 +9,29 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
-local function getChar()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+-- ================= CHARACTER =================
+local function setupChar()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return char, char:WaitForChild("HumanoidRootPart")
 end
 
-local Character = getChar()
-local HRP = Character:WaitForChild("HumanoidRootPart")
+local Character, HRP = setupChar()
 
-LocalPlayer.CharacterAdded:Connect(function(char)
-    Character = char
-    HRP = char:WaitForChild("HumanoidRootPart")
+LocalPlayer.CharacterAdded:Connect(function()
+    Character, HRP = setupChar()
 end)
 
 -- ================= GUI =================
 local gui = Instance.new("ScreenGui")
 gui.Name = "FireworkTP_GUI"
-gui.Parent = game.CoreGui
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 200, 0, 140)
+frame.Size = UDim2.new(0, 200, 0, 130)
 frame.Position = UDim2.new(0.05, 0, 0.4, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-frame.Active = true
-frame.Draggable = true
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 local title = Instance.new("TextLabel", frame)
@@ -42,32 +42,32 @@ title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
 
 local toggle = Instance.new("TextButton", frame)
-toggle.Size = UDim2.new(0.8, 0, 0, 40)
-toggle.Position = UDim2.new(0.1, 0, 0.35, 0)
+toggle.Size = UDim2.new(0.85, 0, 0, 45)
+toggle.Position = UDim2.new(0.075, 0, 0.35, 0)
 toggle.Text = "OFF"
-toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+toggle.BackgroundColor3 = Color3.fromRGB(180,0,0)
 toggle.TextColor3 = Color3.fromRGB(255,255,255)
 toggle.TextScaled = true
 Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 10)
-
-local status = Instance.new("TextLabel", frame)
-status.Size = UDim2.new(1, 0, 0, 25)
-status.Position = UDim2.new(0, 0, 0.75, 0)
-status.Text = "Auto Click: ON"
-status.BackgroundTransparency = 1
-status.TextColor3 = Color3.fromRGB(0,255,0)
-status.TextScaled = true
 
 toggle.MouseButton1Click:Connect(function()
     getgenv().TeleportFirework = not getgenv().TeleportFirework
     if getgenv().TeleportFirework then
         toggle.Text = "ON"
-        toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+        toggle.BackgroundColor3 = Color3.fromRGB(0,180,0)
     else
         toggle.Text = "OFF"
-        toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+        toggle.BackgroundColor3 = Color3.fromRGB(180,0,0)
     end
 end)
+
+local info = Instance.new("TextLabel", frame)
+info.Size = UDim2.new(1, 0, 0, 25)
+info.Position = UDim2.new(0, 0, 0.75, 0)
+info.Text = "Auto Click: 0.5s"
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.fromRGB(0,255,0)
+info.TextScaled = true
 
 -- ================= AUTO CLICK =================
 task.spawn(function()
