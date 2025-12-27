@@ -1,22 +1,22 @@
 -- ========= CONFIG =========
-getgenv().AutoClick = false
-getgenv().FireworkKeyword = "firework" -- fleksibel
-getgenv().ClickDelay = 0.1
-getgenv().NoDamageTime = 2 -- detik sebelum ganti target
+getgenv().AutoHit = false
+getgenv().HitDelay = 0.15
+getgenv().FireworkName = "firework" -- fleksibel
+getgenv().NoDamageTime = 2 -- detik sebelum ganti firework
 -- ==========================
 
 local Players = game:GetService("Players")
-local VIM = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 
 -- ========= GUI =========
-local gui = Instance.new("ScreenGui", lp.PlayerGui)
-gui.Name = "FireworkClickGUI"
+local gui = Instance.new("ScreenGui")
+gui.Name = "FireworkFinalGUI"
 gui.ResetOnSpawn = false
+gui.Parent = lp:WaitForChild("PlayerGui")
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,200)
-main.Position = UDim2.new(0.5,-130,0.5,-100)
+main.Size = UDim2.new(0,260,0,210)
+main.Position = UDim2.new(0.5,-130,0.5,-105)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 main.Active = true
 main.Draggable = true
@@ -25,12 +25,12 @@ Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
-title.Text = "🔥 Auto Click Firework"
+title.Text = "🔥 Auto Firework (FINAL)"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
-local function btn(txt,y)
+local function makeBtn(txt, y)
     local b = Instance.new("TextButton", main)
     b.Size = UDim2.new(1,-20,0,40)
     b.Position = UDim2.new(0,10,0,y)
@@ -43,8 +43,8 @@ local function btn(txt,y)
     return b
 end
 
-local autoBtn = btn("Auto Click : OFF", 50)
-local hideBtn = btn("Hide GUI", 100)
+local autoBtn = makeBtn("Auto Hit : OFF", 50)
+local hideBtn = makeBtn("Hide GUI", 100)
 
 local showBtn = Instance.new("TextButton", gui)
 showBtn.Size = UDim2.new(0,60,0,60)
@@ -59,9 +59,37 @@ showBtn.Active = true
 showBtn.Draggable = true
 Instance.new("UICorner", showBtn).CornerRadius = UDim.new(1,0)
 
+-- ========= FIREWORK FINDER =========
+local ignored = {}
+local currentFirework
+local lastHitTime = tick()
+
+local function getFireworks()
+    local list = {}
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart")
+        and string.find(string.lower(v.Name), string.lower(getgenv().FireworkName))
+        and not ignored[v] then
+            table.insert(list, v)
+        end
+    end
+    return list
+end
+
+local function pickFirework()
+    local list = getFireworks()
+    if #list > 0 then
+        currentFirework = list[math.random(1, #list)]
+        lastHitTime = tick()
+    else
+        currentFirework = nil
+    end
+end
+
+-- ========= BUTTON EVENTS =========
 autoBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoClick = not getgenv().AutoClick
-    autoBtn.Text = "Auto Click : "..(getgenv().AutoClick and "ON" or "OFF")
+    getgenv().AutoHit = not getgenv().AutoHit
+    autoBtn.Text = "Auto Hit : " .. (getgenv().AutoHit and "ON" or "OFF")
 end)
 
 hideBtn.MouseButton1Click:Connect(function()
@@ -74,58 +102,36 @@ showBtn.MouseButton1Click:Connect(function()
     showBtn.Visible = false
 end)
 
--- ========= FIREWORK SYSTEM =========
-local ignored = {}
-local lastProgress = tick()
-local currentTarget
-
-local function getFireworks()
-    local list = {}
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart")
-        and string.find(string.lower(v.Name), getgenv().FireworkKeyword)
-        and not ignored[v] then
-            table.insert(list, v)
-        end
-    end
-    return list
-end
-
-local function pickTarget()
-    local list = getFireworks()
-    if #list > 0 then
-        currentTarget = list[math.random(1,#list)]
-        lastProgress = tick()
-    end
-end
-
--- ========= AUTO CLICK LOOP =========
+-- ========= AUTO HIT LOOP =========
 task.spawn(function()
-    while task.wait(getgenv().ClickDelay) do
-        if not getgenv().AutoClick then continue end
+    while task.wait(getgenv().HitDelay) do
+        if not getgenv().AutoHit then continue end
 
         local char = lp.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
 
-        if not currentTarget or not currentTarget.Parent then
-            pickTarget()
+        if not currentFirework or not currentFirework.Parent then
+            pickFirework()
             continue
         end
 
         -- Dekatkan ke firework
         char.HumanoidRootPart.CFrame =
-            currentTarget.CFrame * CFrame.new(0,0,-4)
+            currentFirework.CFrame * CFrame.new(0,0,-3)
 
-        -- Auto mouse click
-        VIM:SendMouseButtonEvent(0,0,0,true,game,0)
-        VIM:SendMouseButtonEvent(0,0,0,false,game,0)
+        -- Serang pakai tool
+        for _,tool in pairs(char:GetChildren()) do
+            if tool:IsA("Tool") then
+                tool:Activate()
+            end
+        end
 
-        -- Jika terlalu lama → ganti target
-        if tick() - lastProgress > getgenv().NoDamageTime then
-            ignored[currentTarget] = true
-            currentTarget = nil
+        -- Jika terlalu lama tidak ada progress → ganti firework
+        if tick() - lastHitTime > getgenv().NoDamageTime then
+            ignored[currentFirework] = true
+            currentFirework = nil
         end
     end
 end)
 
-print("✅ FINAL Auto Click Firework Aktif")
+print("✅ FINAL Auto Firework + Auto Switch Loaded")
