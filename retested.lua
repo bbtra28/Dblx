@@ -1,8 +1,8 @@
 -- ========= CONFIG =========
-getgenv().AutoHit = false
-getgenv().HitDelay = 0.15
+getgenv().AutoTP = false
+getgenv().TPDelay = 0.3
 getgenv().FireworkName = "firework" -- fleksibel
-getgenv().NoDamageTime = 2 -- detik sebelum ganti firework
+getgenv().SwitchTime = 2 -- detik sebelum ganti firework
 -- ==========================
 
 local Players = game:GetService("Players")
@@ -10,13 +10,13 @@ local lp = Players.LocalPlayer
 
 -- ========= GUI =========
 local gui = Instance.new("ScreenGui")
-gui.Name = "FireworkFinalGUI"
+gui.Name = "FireworkTPGUI"
 gui.ResetOnSpawn = false
 gui.Parent = lp:WaitForChild("PlayerGui")
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,210)
-main.Position = UDim2.new(0.5,-130,0.5,-105)
+main.Size = UDim2.new(0,260,0,200)
+main.Position = UDim2.new(0.5,-130,0.5,-100)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 main.Active = true
 main.Draggable = true
@@ -25,7 +25,7 @@ Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
-title.Text = "🔥 Auto Firework (FINAL)"
+title.Text = "🚀 Auto TP Firework"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
@@ -43,7 +43,7 @@ local function makeBtn(txt, y)
     return b
 end
 
-local autoBtn = makeBtn("Auto Hit : OFF", 50)
+local tpBtn = makeBtn("Auto TP : OFF", 50)
 local hideBtn = makeBtn("Hide GUI", 100)
 
 local showBtn = Instance.new("TextButton", gui)
@@ -61,8 +61,8 @@ Instance.new("UICorner", showBtn).CornerRadius = UDim.new(1,0)
 
 -- ========= FIREWORK FINDER =========
 local ignored = {}
-local currentFirework
-local lastHitTime = tick()
+local currentFW
+local lastSwitch = tick()
 
 local function getFireworks()
     local list = {}
@@ -79,17 +79,17 @@ end
 local function pickFirework()
     local list = getFireworks()
     if #list > 0 then
-        currentFirework = list[math.random(1, #list)]
-        lastHitTime = tick()
+        currentFW = list[math.random(1, #list)]
+        lastSwitch = tick()
     else
-        currentFirework = nil
+        currentFW = nil
     end
 end
 
 -- ========= BUTTON EVENTS =========
-autoBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoHit = not getgenv().AutoHit
-    autoBtn.Text = "Auto Hit : " .. (getgenv().AutoHit and "ON" or "OFF")
+tpBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoTP = not getgenv().AutoTP
+    tpBtn.Text = "Auto TP : " .. (getgenv().AutoTP and "ON" or "OFF")
 end)
 
 hideBtn.MouseButton1Click:Connect(function()
@@ -102,36 +102,29 @@ showBtn.MouseButton1Click:Connect(function()
     showBtn.Visible = false
 end)
 
--- ========= AUTO HIT LOOP =========
+-- ========= AUTO TP LOOP =========
 task.spawn(function()
-    while task.wait(getgenv().HitDelay) do
-        if not getgenv().AutoHit then continue end
+    while task.wait(getgenv().TPDelay) do
+        if not getgenv().AutoTP then continue end
 
         local char = lp.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
 
-        if not currentFirework or not currentFirework.Parent then
+        if not currentFW or not currentFW.Parent then
             pickFirework()
             continue
         end
 
-        -- Dekatkan ke firework
+        -- Teleport ke Firework
         char.HumanoidRootPart.CFrame =
-            currentFirework.CFrame * CFrame.new(0,0,-3)
+            currentFW.CFrame * CFrame.new(0, 0, -4)
 
-        -- Serang pakai tool
-        for _,tool in pairs(char:GetChildren()) do
-            if tool:IsA("Tool") then
-                tool:Activate()
-            end
-        end
-
-        -- Jika terlalu lama tidak ada progress → ganti firework
-        if tick() - lastHitTime > getgenv().NoDamageTime then
-            ignored[currentFirework] = true
-            currentFirework = nil
+        -- Auto ganti setelah waktu tertentu
+        if tick() - lastSwitch > getgenv().SwitchTime then
+            ignored[currentFW] = true
+            currentFW = nil
         end
     end
 end)
 
-print("✅ FINAL Auto Firework + Auto Switch Loaded")
+print("✅ Auto Teleport Firework (Only TP) Loaded")
