@@ -1,19 +1,13 @@
 -- ===== CONFIG =====
 getgenv().AutoFarm = false
-getgenv().Delay = 0.25
+getgenv().Delay = 0.3
 
 -- ===== SERVICES =====
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local Char = Player.Character or Player.CharacterAdded:Wait()
-local HRP = Char:WaitForChild("HumanoidRootPart")
 
--- ===== TOUCH ATTACK (MOBILE) =====
-local function attack()
-    local tool = Player.Character:FindFirstChildOfClass("Tool")
-    if tool then
-        tool:Activate()
-    end
+local function getChar()
+    return Player.Character or Player.CharacterAdded:Wait()
 end
 
 -- ===== GUI =====
@@ -22,28 +16,17 @@ gui.Name = "FireworkMobileGUI"
 gui.ResetOnSpawn = false
 gui.Parent = Player:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,220,0,90)
-frame.Position = UDim2.new(0.5,-110,0.75,0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
-
-local btn = Instance.new("TextButton", frame)
-btn.Size = UDim2.new(1,-20,0,50)
-btn.Position = UDim2.new(0,10,0,20)
+local btn = Instance.new("TextButton", gui)
+btn.Size = UDim2.new(0,220,0,50)
+btn.Position = UDim2.new(0.5,-110,0.8,0)
 btn.BackgroundColor3 = Color3.fromRGB(180,0,0)
 btn.Text = "AUTO FIREWORK : OFF"
 btn.TextColor3 = Color3.new(1,1,1)
 btn.TextScaled = true
 btn.BorderSizePixel = 0
-
 Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
 
--- ===== BUTTON TOUCH =====
+-- ===== BUTTON =====
 btn.Activated:Connect(function()
     getgenv().AutoFarm = not getgenv().AutoFarm
     if getgenv().AutoFarm then
@@ -59,20 +42,21 @@ end)
 task.spawn(function()
     while task.wait() do
         if getgenv().AutoFarm then
-            local fw = workspace:FindFirstChild("SpawnedFireworks")
-            if fw then
-                for i = 1,49 do
-                    if not getgenv().AutoFarm then break end
-                    local folder = fw:FindFirstChild(tostring(i))
-                    if folder and folder:FindFirstChild("Rocket") then
-                        local rocket = folder.Rocket
-                        if rocket:IsA("BasePart") then
-                            HRP.CFrame = rocket.CFrame * CFrame.new(0,0,-3)
-                            task.wait(0.15)
-                            attack()
-                            task.wait(getgenv().Delay)
-                        end
-                    end
+            local char = getChar()
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local tool = char:FindFirstChildOfClass("Tool")
+
+            local fw = workspace:FindFirstChild("Fireworks")
+            if hrp and tool and fw then
+                local rocket = fw:FindFirstChild("Rocket", true)
+                if rocket and rocket:IsA("BasePart") then
+                    -- TELEPORT
+                    hrp.CFrame = rocket.CFrame * CFrame.new(0,0,-3)
+                    task.wait(0.15)
+
+                    -- HIT (MOBILE)
+                    tool:Activate()
+                    task.wait(getgenv().Delay)
                 end
             end
         end
