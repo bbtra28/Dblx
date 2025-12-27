@@ -1,45 +1,43 @@
--- ===== SETTING =====
+-- ========= CONFIG =========
 getgenv().AutoHit = false
-getgenv().HitDistance = 20
 getgenv().HitDelay = 0.15
-getgenv().FireworkName = "Firework"
--- ===================
+getgenv().FireworkName = "firework" -- fleksibel (fire, fireworks, event, dll)
+-- ==========================
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 
--- ===== GUI ROOT =====
+-- ========= GUI =========
 local gui = Instance.new("ScreenGui")
-gui.Name = "AutoHitGUI"
+gui.Name = "FireworkFinalGUI"
 gui.ResetOnSpawn = false
 gui.Parent = lp:WaitForChild("PlayerGui")
 
--- ===== MAIN FRAME =====
+-- Main frame
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,220)
-main.Position = UDim2.new(0.5,-130,0.5,-110)
+main.Size = UDim2.new(0,260,0,210)
+main.Position = UDim2.new(0.5,-130,0.5,-105)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-main.Visible = true
 main.Active = true
 main.Draggable = true
 
 Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
 
--- ===== TITLE =====
+-- Title
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
-title.Text = "🔥 Auto Hit Firework"
+title.Text = "🔥 Auto Firework (FINAL)"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
--- ===== BUTTON CREATOR =====
-local function createBtn(text, y)
+-- Button maker
+local function makeBtn(txt, y)
     local b = Instance.new("TextButton", main)
     b.Size = UDim2.new(1,-20,0,40)
     b.Position = UDim2.new(0,10,0,y)
-    b.Text = text
+    b.Text = txt
     b.Font = Enum.Font.GothamBold
     b.TextSize = 14
     b.TextColor3 = Color3.new(1,1,1)
@@ -48,11 +46,10 @@ local function createBtn(text, y)
     return b
 end
 
-local autoBtn = createBtn("Auto Hit : OFF", 50)
-local tpBtn   = createBtn("Teleport ke Firework", 95)
-local hideBtn = createBtn("Hide GUI", 145)
+local autoBtn = makeBtn("Auto Hit : OFF", 50)
+local hideBtn = makeBtn("Hide GUI", 100)
 
--- ===== SHOW BUTTON (FLOATING) =====
+-- Floating SHOW button
 local showBtn = Instance.new("TextButton", gui)
 showBtn.Size = UDim2.new(0,60,0,60)
 showBtn.Position = UDim2.new(0,20,0.5,-30)
@@ -64,49 +61,34 @@ showBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
 showBtn.Visible = false
 showBtn.Active = true
 showBtn.Draggable = true
-
 Instance.new("UICorner", showBtn).CornerRadius = UDim.new(1,0)
 
--- ===== FUNCTIONS =====
-local function getFirework()
+-- ========= FIREWORK FINDER =========
+local function getFireworkPart()
     for _,v in pairs(workspace:GetDescendants()) do
-        if v.Name == getgenv().FireworkName and v:IsA("BasePart") then
-            return v
-        end
-    end
-end
-
-local function tpFirework()
-    local fw = getFirework()
-    if fw and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        lp.Character.HumanoidRootPart.CFrame = fw.CFrame + Vector3.new(0,3,0)
-    end
-end
-
-local function getTarget()
-    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = lp.Character.HumanoidRootPart
-
-    for _,m in pairs(workspace:GetChildren()) do
-        if m:IsA("Model") and m ~= lp.Character then
-            local hum = m:FindFirstChildOfClass("Humanoid")
-            local root = m:FindFirstChild("HumanoidRootPart")
-            if hum and root and hum.Health > 0 then
-                if (root.Position - hrp.Position).Magnitude <= getgenv().HitDistance then
-                    return m
+        if string.find(string.lower(v.Name), string.lower(getgenv().FireworkName)) then
+            if v:IsA("BasePart") then
+                return v
+            elseif v:IsA("Model") then
+                if v.PrimaryPart then
+                    return v.PrimaryPart
+                else
+                    for _,p in pairs(v:GetDescendants()) do
+                        if p:IsA("BasePart") then
+                            return p
+                        end
+                    end
                 end
             end
         end
     end
 end
 
--- ===== BUTTON EVENTS =====
+-- ========= BUTTON EVENTS =========
 autoBtn.MouseButton1Click:Connect(function()
     getgenv().AutoHit = not getgenv().AutoHit
     autoBtn.Text = "Auto Hit : " .. (getgenv().AutoHit and "ON" or "OFF")
 end)
-
-tpBtn.MouseButton1Click:Connect(tpFirework)
 
 hideBtn.MouseButton1Click:Connect(function()
     main.Visible = false
@@ -118,14 +100,21 @@ showBtn.MouseButton1Click:Connect(function()
     showBtn.Visible = false
 end)
 
--- ===== AUTO HIT LOOP =====
+-- ========= AUTO HIT LOOP =========
 task.spawn(function()
     while task.wait(getgenv().HitDelay) do
         if getgenv().AutoHit then
-            local target = getTarget()
-            if target then
+            local fw = getFireworkPart()
+            local char = lp.Character
+            if fw and char and char:FindFirstChild("HumanoidRootPart") then
+
+                -- Stay dekat Firework
+                char.HumanoidRootPart.CFrame =
+                    fw.CFrame * CFrame.new(0, 0, -3)
+
+                -- Spam attack
                 pcall(function()
-                    for _,tool in pairs(lp.Character:GetChildren()) do
+                    for _,tool in pairs(char:GetChildren()) do
                         if tool:IsA("Tool") then
                             tool:Activate()
                         end
@@ -136,4 +125,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ Auto Hit + TP Firework GUI Loaded")
+print("✅ FINAL Auto Firework Script Loaded")
