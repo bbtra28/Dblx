@@ -19,72 +19,77 @@ Player.CharacterAdded:Connect(function(char)
     HRP = char:WaitForChild("HumanoidRootPart")
 end)
 
--- ================= GUI =================
-local gui = Instance.new("ScreenGui", Player.PlayerGui)
-gui.Name = "HP_Teleport_GUI"
-gui.ResetOnSpawn = false
+-- ================= DRAWING UI =================
+local Drawing = Drawing
+local UIS = game:GetService("UserInputService")
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 260, 0, 280)
-frame.Position = UDim2.new(0.5, -130, 0.5, -140)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-frame.Active = true
-frame.Draggable = true
+local UI = {
+    Open = true,
+    X = 100,
+    Y = 200,
+    W = 240,
+    H = 210
+}
 
-local function button(text, y)
-    local b = Instance.new("TextButton", frame)
-    b.Size = UDim2.new(0, 230, 0, 40)
-    b.Position = UDim2.new(0, 15, 0, y)
-    b.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    b.TextColor3 = Color3.new(1,1,1)
-    b.TextScaled = true
-    b.Text = text
+local function box(x,y,w,h)
+    local b = Drawing.new("Square")
+    b.Position = Vector2.new(x,y)
+    b.Size = Vector2.new(w,h)
+    b.Color = Color3.fromRGB(25,25,25)
+    b.Filled = true
+    b.Thickness = 1
     return b
 end
 
-local function box(placeholder, y)
-    local t = Instance.new("TextBox", frame)
-    t.Size = UDim2.new(0, 230, 0, 35)
-    t.Position = UDim2.new(0, 15, 0, y)
-    t.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    t.TextColor3 = Color3.new(1,1,1)
-    t.PlaceholderText = placeholder
-    t.TextScaled = true
-    t.ClearTextOnFocus = false
+local function text(txt,x,y)
+    local t = Drawing.new("Text")
+    t.Text = txt
+    t.Position = Vector2.new(x,y)
+    t.Size = 18
+    t.Color = Color3.new(1,1,1)
+    t.Outline = true
     return t
 end
 
-local tpBtn = button("Teleport : OFF", 10)
-local acBtn = button("Auto Click : OFF", 55)
+local bg = box(UI.X,UI.Y,UI.W,UI.H)
+local title = text("🔥 FIREWORK FARM (DELTA)", UI.X+15, UI.Y+10)
 
-local tpDelayBox = box("Teleport Delay (ex: 0.7)", 105)
-local acDelayBox = box("Click Delay (ex: 0.5)", 150)
+local tpTxt = text("Teleport : OFF", UI.X+15, UI.Y+50)
+local acTxt = text("AutoClick : OFF", UI.X+15, UI.Y+80)
+local tpDelayTxt = text("TP Delay : "..getgenv().TeleportDelay, UI.X+15, UI.Y+115)
+local acDelayTxt = text("Click Delay : "..getgenv().ClickDelay, UI.X+15, UI.Y+145)
+local closeTxt = text("[ TAP TO CLOSE ]", UI.X+15, UI.Y+175)
 
-local closeBtn = button("CLOSE GUI", 200)
+-- ================= INPUT =================
+UIS.InputBegan:Connect(function(input)
+    if input.UserInputType ~= Enum.UserInputType.Touch then return end
+    local pos = input.Position
 
--- ================= BUTTON LOGIC =================
-tpBtn.MouseButton1Click:Connect(function()
-    getgenv().TeleportFirework = not getgenv().TeleportFirework
-    tpBtn.Text = "Teleport : "..(getgenv().TeleportFirework and "ON" or "OFF")
-end)
+    local function hit(x,y,w,h)
+        return pos.X >= x and pos.X <= x+w and pos.Y >= y and pos.Y <= y+h
+    end
 
-acBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoClick = not getgenv().AutoClick
-    acBtn.Text = "Auto Click : "..(getgenv().AutoClick and "ON" or "OFF")
-end)
-
-tpDelayBox.FocusLost:Connect(function()
-    local v = tonumber(tpDelayBox.Text)
-    if v then getgenv().TeleportDelay = v end
-end)
-
-acDelayBox.FocusLost:Connect(function()
-    local v = tonumber(acDelayBox.Text)
-    if v then getgenv().ClickDelay = v end
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
+    if hit(UI.X,UI.Y+45,UI.W,25) then
+        getgenv().TeleportFirework = not getgenv().TeleportFirework
+        tpTxt.Text = "Teleport : "..(getgenv().TeleportFirework and "ON" or "OFF")
+    elseif hit(UI.X,UI.Y+75,UI.W,25) then
+        getgenv().AutoClick = not getgenv().AutoClick
+        acTxt.Text = "AutoClick : "..(getgenv().AutoClick and "ON" or "OFF")
+    elseif hit(UI.X,UI.Y+105,UI.W,25) then
+        getgenv().TeleportDelay = math.max(0.1, getgenv().TeleportDelay - 0.1)
+        tpDelayTxt.Text = "TP Delay : "..string.format("%.1f", getgenv().TeleportDelay)
+    elseif hit(UI.X,UI.Y+135,UI.W,25) then
+        getgenv().ClickDelay = math.max(0.1, getgenv().ClickDelay - 0.1)
+        acDelayTxt.Text = "Click Delay : "..string.format("%.1f", getgenv().ClickDelay)
+    elseif hit(UI.X,UI.Y+170,UI.W,25) then
+        bg:Remove()
+        title:Remove()
+        tpTxt:Remove()
+        acTxt:Remove()
+        tpDelayTxt:Remove()
+        acDelayTxt:Remove()
+        closeTxt:Remove()
+    end
 end)
 
 -- ================= TELEPORT =================
@@ -114,11 +119,9 @@ end)
 task.spawn(function()
     while task.wait() do
         if getgenv().AutoClick then
-            pcall(function()
-                VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                task.wait(0.05)
-                VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            end)
+            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(0.05)
+            VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
             task.wait(getgenv().ClickDelay)
         else
             task.wait(0.2)
