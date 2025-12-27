@@ -1,107 +1,139 @@
---[[  
-   Finder + ESP + Auto Teleport + GUI
-   Target: Chef Chubbeloni
-   Client-side (Executor Script)
-]]--
+-- ===== SETTING =====
+getgenv().AutoHit = false
+getgenv().HitDistance = 20
+getgenv().HitDelay = 0.15
+getgenv().FireworkName = "Firework"
+-- ===================
 
-local TARGET_NAME = "Chef Chubbeloni"
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 
---===== GUI =====--
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "ChubFinderGUI"
+-- ===== GUI ROOT =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "AutoHitGUI"
+gui.ResetOnSpawn = false
+gui.Parent = lp:WaitForChild("PlayerGui")
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 60)
-Frame.Position = UDim2.new(0.1, 0, 0.1, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-Frame.Active = true
-Frame.Draggable = true
+-- ===== MAIN FRAME =====
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0,260,0,220)
+main.Position = UDim2.new(0.5,-130,0.5,-110)
+main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+main.Visible = true
+main.Active = true
+main.Draggable = true
 
-local UIStroke = Instance.new("UIStroke", Frame)
-UIStroke.Thickness = 2
-UIStroke.Color = Color3.fromRGB(255,120,0)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
 
-local ToggleBtn = Instance.new("TextButton", Frame)
-ToggleBtn.Size = UDim2.new(1,0,1,0)
-ToggleBtn.BackgroundTransparency = 1
-ToggleBtn.Text = "CHUBBELONI FINDER: OFF"
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextColor3 = Color3.fromRGB(255,120,0)
-ToggleBtn.TextScaled = true
+-- ===== TITLE =====
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,35)
+title.BackgroundTransparency = 1
+title.Text = "🔥 Auto Hit Firework"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
 
-local enabled = false
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    enabled = not enabled
-    ToggleBtn.Text = enabled and "CHUBBELONI FINDER: ON" or "CHUBBELONI FINDER: OFF"
-end)
-
---===== ESP MAKER =====--
-local function clearESP(model)
-    if model:FindFirstChild("ChubESP") then
-        model.ChubESP:Destroy()
-    end
+-- ===== BUTTON CREATOR =====
+local function createBtn(text, y)
+    local b = Instance.new("TextButton", main)
+    b.Size = UDim2.new(1,-20,0,40)
+    b.Position = UDim2.new(0,10,0,y)
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+    return b
 end
 
-local function makeESP(model)
-    clearESP(model)
-    local hrp = model:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+local autoBtn = createBtn("Auto Hit : OFF", 50)
+local tpBtn   = createBtn("Teleport ke Firework", 95)
+local hideBtn = createBtn("Hide GUI", 145)
 
-    local folder = Instance.new("Folder", model)
-    folder.Name = "ChubESP"
+-- ===== SHOW BUTTON (FLOATING) =====
+local showBtn = Instance.new("TextButton", gui)
+showBtn.Size = UDim2.new(0,60,0,60)
+showBtn.Position = UDim2.new(0,20,0.5,-30)
+showBtn.Text = "SHOW"
+showBtn.Font = Enum.Font.GothamBold
+showBtn.TextSize = 14
+showBtn.TextColor3 = Color3.new(1,1,1)
+showBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+showBtn.Visible = false
+showBtn.Active = true
+showBtn.Draggable = true
 
-    local hl = Instance.new("Highlight", folder)
-    hl.Adornee = model
-    hl.FillTransparency = 1
-    hl.OutlineColor = Color3.fromRGB(255,120,0)
-    hl.OutlineTransparency = 0
+Instance.new("UICorner", showBtn).CornerRadius = UDim.new(1,0)
 
-    local bill = Instance.new("BillboardGui", folder)
-    bill.Adornee = hrp
-    bill.Size = UDim2.new(0,150,0,35)
-    bill.AlwaysOnTop = true
-
-    local txt = Instance.new("TextLabel", bill)
-    txt.Size = UDim2.new(1,0,1,0)
-    txt.BackgroundTransparency = 1
-    txt.Text = "CHEF CHUBBELONI"
-    txt.Font = Enum.Font.GothamBold
-    txt.TextScaled = true
-    txt.TextColor3 = Color3.fromRGB(255,120,0)
-end
-
---===== CARI NPC =====--
-local function findChub()
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name:lower():find(TARGET_NAME:lower()) then
-            return obj
+-- ===== FUNCTIONS =====
+local function getFirework()
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v.Name == getgenv().FireworkName and v:IsA("BasePart") then
+            return v
         end
     end
-    return nil
 end
 
---===== LOOP UTAMA =====--
-task.spawn(function()
-    while true do
-        if enabled then
-            local npc = findChub()
-            if npc then
-                makeESP(npc)
+local function tpFirework()
+    local fw = getFirework()
+    if fw and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        lp.Character.HumanoidRootPart.CFrame = fw.CFrame + Vector3.new(0,3,0)
+    end
+end
 
-                -- Auto teleport player ke NPC
-                local hrp = npc:FindFirstChild("HumanoidRootPart")
-                local myChar = lp.Character
-                if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(2,0,0)
+local function getTarget()
+    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = lp.Character.HumanoidRootPart
+
+    for _,m in pairs(workspace:GetChildren()) do
+        if m:IsA("Model") and m ~= lp.Character then
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            local root = m:FindFirstChild("HumanoidRootPart")
+            if hum and root and hum.Health > 0 then
+                if (root.Position - hrp.Position).Magnitude <= getgenv().HitDistance then
+                    return m
                 end
             end
         end
-        task.wait(1)
+    end
+end
+
+-- ===== BUTTON EVENTS =====
+autoBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoHit = not getgenv().AutoHit
+    autoBtn.Text = "Auto Hit : " .. (getgenv().AutoHit and "ON" or "OFF")
+end)
+
+tpBtn.MouseButton1Click:Connect(tpFirework)
+
+hideBtn.MouseButton1Click:Connect(function()
+    main.Visible = false
+    showBtn.Visible = true
+end)
+
+showBtn.MouseButton1Click:Connect(function()
+    main.Visible = true
+    showBtn.Visible = false
+end)
+
+-- ===== AUTO HIT LOOP =====
+task.spawn(function()
+    while task.wait(getgenv().HitDelay) do
+        if getgenv().AutoHit then
+            local target = getTarget()
+            if target then
+                pcall(function()
+                    for _,tool in pairs(lp.Character:GetChildren()) do
+                        if tool:IsA("Tool") then
+                            tool:Activate()
+                        end
+                    end
+                end)
+            end
+        end
     end
 end)
 
-print("Chubbeloni Finder + Auto TP Loaded!")
+print("✅ Auto Hit + TP Firework GUI Loaded")
