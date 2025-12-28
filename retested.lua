@@ -2,7 +2,7 @@
 getgenv().TeleportFirework = false
 getgenv().TeleportDelay = 0.9
 getgenv().AutoClick = true
-getgenv().ClickDelay = 0.2 -- 200 ms
+getgenv().ClickDelay = 0.3 -- 300 ms
 
 -- ================= SERVICES =================
 local Players = game:GetService("Players")
@@ -136,3 +136,4 @@ task.spawn(function()
         end
     end
 end)
+
