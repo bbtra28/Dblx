@@ -4,20 +4,16 @@ if not game:IsLoaded() then
 end
 
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
--- Pastikan ini private server MILIK KITA
+-- Pastikan PRIVATE SERVER MILIK SENDIRI
 if game.PrivateServerId == "" then return end
-if game.PrivateServerOwnerId ~= player.UserId then return end
+if game.PrivateServerOwnerId ~= LocalPlayer.UserId then return end
 
--- Kalau sudah ada orang lain sejak awal → langsung kick
-if #Players:GetPlayers() > 1 then
-    player:Kick("Player lain terdeteksi di private server")
-end
-
--- Deteksi player baru join
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= player then
-        player:Kick("Player lain join private server")
+-- Loop ringan, cek jumlah player
+RunService.Heartbeat:Connect(function()
+    if #Players:GetPlayers() > 1 then
+        LocalPlayer:Kick("Player lain masuk ke private server")
     end
 end)
